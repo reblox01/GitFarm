@@ -1,14 +1,206 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
+// GitFarm - GitHub Contribution Web App
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ========================
+// User & Authentication
+// ========================
+
+model User {
+  id        String   @id @default(cuid())
+  githubId  String   @unique
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts     Account[]
+  sessions     Session[]
+  subscription UserSubscription?
+  tasks        Task[]
+  commitJobs   CommitJob[]
+
+  @@index([githubId])
+  @@index([email])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ========================
+// Subscription & Plans
+// ========================
+
+model Plan {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  price           Int // in cents
+  stripeProductId String?
+  lemonProductId  String?
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  features      PlanFeature[]
+  subscriptions UserSubscription[]
+}
+
+model Feature {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "daily_tasks", "custom_patterns"
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  plans PlanFeature[]
+}
+
+model PlanFeature {
+  id         String @id @default(cuid())
+  planId     String
+  featureId  String
+  limitValue Int? // null = unlimited
+
+  // Relations
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureId])
+}
+
+model UserSubscription {
+  id                     String             @id @default(cuid())
+  userId                 String             @unique
+  planId                 String
+  providerSubscriptionId String?
+  provider               PaymentProvider    @default(STRIPE)
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd       DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+}
+
+enum PaymentProvider {
+  STRIPE
+  LEMON_SQUEEZY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  TRIAL
+}
+
+// ========================
+// Site Settings (Admin)
+// ========================
+
+model SiteSettings {
+  id              String          @id @default(cuid())
+  paymentProvider PaymentProvider @default(STRIPE)
+  config          Json? // Additional settings
+  updatedAt       DateTime        @updatedAt
+}
+
+// ========================
+// Tasks & Commit Jobs
+// ========================
+
+model Task {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  schedule  String // cron expression
+  pattern   Json // contribution pattern data
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model CommitJob {
+  id               String    @id @default(cuid())
+  userId           String
+  status           JobStatus @default(PENDING)
+  totalCommits     Int
+  completedCommits Int       @default(0)
+  pattern          Json // contribution pattern data
+  repositoryUrl    String?
+  errorMessage     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  completedAt      DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
 }

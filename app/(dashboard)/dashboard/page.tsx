@@ -8,9 +8,11 @@ import Link from 'next/link';
 
 export default async function DashboardPage() {
     const session = await auth();
+    console.log('Dashboard Page Session:', session ? 'Found' : 'Null');
 
     // Fetch user stats
     if (!session?.user?.id) {
+        console.log('Redirecting to login from dashboard');
         redirect('/login');
     }
 

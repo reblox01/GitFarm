@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 export const authConfig: NextAuthConfig = {
     trustHost: true,
     debug: process.env.NODE_ENV === 'development',
-    adapter: PrismaAdapter(prisma),
+    // Remove adapter - JWT sessions don't use database
     providers: [
         Credentials({
             name: 'credentials',
@@ -58,65 +58,24 @@ export const authConfig: NextAuthConfig = {
     ],
     callbacks: {
         async jwt({ token, user }) {
+            console.log('JWT Callback called');
             // Initial sign in
             if (user) {
+                console.log('JWT Callback: User signed in', user.id);
                 token.id = user.id;
                 token.role = (user as any).role || 'USER';
             }
             return token;
         },
         async session({ session, token }) {
+            console.log('Session Callback called');
             // Add user data from JWT token to session
             if (session.user) {
+                console.log('Session Callback: Adding user data', token.id);
                 session.user.id = token.id as string;
                 session.user.role = token.role as string;
             }
             return session;
-        },
-    },
-    events: {
-        async createUser({ user }) {
-            try {
-                // Ensure user has an ID
-                if (!user.id) {
-                    console.error('User created without ID');
-                    return;
-                }
-
-                // Create default free subscription for new users
-                const defaultPlan = await prisma.plan.findFirst({
-                    where: { isDefault: true },
-                });
-
-                if (defaultPlan) {
-                    await prisma.userSubscription.create({
-                        data: {
-                            userId: user.id,
-                            planId: defaultPlan.id,
-                            status: 'ACTIVE',
-                        },
-                    });
-                }
-            } catch (error) {
-                console.error('Error in createUser event:', error);
-                // Don't throw - we don't want to block user creation if subscription fails
-            }
-        },
-        async linkAccount({ user, account }) {
-            try {
-                // Update user with GitHub ID when account is linked
-                if (account.provider === 'github' && account.providerAccountId) {
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: {
-                            githubId: account.providerAccountId,
-                        },
-                    });
-                }
-            } catch (error) {
-                console.error('Error in linkAccount event:', error);
-                // Don't throw - account link will still succeed
-            }
         },
     },
     pages: {

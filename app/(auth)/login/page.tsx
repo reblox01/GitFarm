@@ -11,8 +11,10 @@ import { Github } from 'lucide-react';
 
 export default async function LoginPage() {
     const session = await auth();
+    console.log('Login Page Session:', session ? 'Found' : 'Null');
 
     if (session) {
+        console.log('Redirecting to dashboard from login');
         redirect('/dashboard');
     }
 

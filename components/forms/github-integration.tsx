@@ -7,6 +7,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Github, CheckCircle2, XCircle } from 'lucide-react';
 import { initiateGitHubLink, disconnectGitHub } from '@/app/actions/github';
 import { toast } from 'sonner';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function GitHubIntegration({ userId }: { userId: string }) {
     const [loading, setLoading] = useState(false);
@@ -44,9 +55,6 @@ export function GitHubIntegration({ userId }: { userId: string }) {
     }
 
     async function handleDisconnect() {
-        if (!confirm('Are you sure you want to disconnect your GitHub account?')) {
-            return;
-        }
 
         setLoading(true);
         const result = await disconnectGitHub();
@@ -113,13 +121,31 @@ export function GitHubIntegration({ userId }: { userId: string }) {
                         </div>
                     </div>
                     {connected ? (
-                        <Button
-                            variant="destructive"
-                            onClick={handleDisconnect}
-                            disabled={loading}
-                        >
-                            Disconnect
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    disabled={loading}
+                                >
+                                    Disconnect
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Disconnect GitHub Account?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to disconnect your GitHub account?
+                                        You will no longer be able to generate commits or sync repositories.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDisconnect}>
+                                        Disconnect
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     ) : (
                         <Button onClick={handleConnect} disabled={loading}>
                             <Github className="mr-2 h-4 w-4" />

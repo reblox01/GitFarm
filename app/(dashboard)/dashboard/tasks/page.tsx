@@ -1,9 +1,10 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Clock, Pause, Play, Trash2 } from 'lucide-react';
+import { Plus, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { TaskItem } from '@/components/tasks/task-item';
 import { redirect } from 'next/navigation';
 
 export default async function TasksPage() {
@@ -54,66 +55,7 @@ export default async function TasksPage() {
             ) : (
                 <div className="grid gap-4">
                     {tasks.map((task) => (
-                        <Card key={task.id}>
-                            <CardHeader>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <CardTitle>{task.name}</CardTitle>
-                                        <CardDescription>
-                                            Schedule: {task.schedule}
-                                        </CardDescription>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={async () => {
-                                                // TODO: Implement toggle
-                                            }}
-                                        >
-                                            {task.active ? (
-                                                <>
-                                                    <Pause className="h-4 w-4 mr-1" />
-                                                    Pause
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Play className="h-4 w-4 mr-1" />
-                                                    Resume
-                                                </>
-                                            )}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={async () => {
-                                                // TODO: Implement delete
-                                            }}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <div
-                                            className={`h-2 w-2 rounded-full ${task.active ? 'bg-green-500' : 'bg-gray-400'
-                                                }`}
-                                        />
-                                        <span className="text-sm text-muted-foreground">
-                                            {task.active ? 'Active' : 'Paused'}
-                                        </span>
-                                    </div>
-                                    {task.repository && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Repository: <span className="font-mono">{task.repository}</span>
-                                        </p>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <TaskItem key={task.id} task={task} />
                     ))}
                 </div>
             )}

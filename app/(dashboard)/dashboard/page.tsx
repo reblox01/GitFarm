@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, GitCommit, Sparkles, TrendingUp } from 'lucide-react';
@@ -9,8 +10,12 @@ export default async function DashboardPage() {
     const session = await auth();
 
     // Fetch user stats
+    if (!session?.user?.id) {
+        redirect('/login');
+    }
+
     const user = await prisma.user.findUnique({
-        where: { id: session!.user.id },
+        where: { id: session.user.id },
         include: {
             subscription: {
                 include: {
@@ -131,9 +136,9 @@ export default async function DashboardPage() {
                                         </p>
                                     </div>
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${job.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                                            job.status === 'RUNNING' ? 'bg-blue-100 text-blue-800' :
-                                                job.status === 'FAILED' ? 'bg-red-100 text-red-800' :
-                                                    'bg-gray-100 text-gray-800'
+                                        job.status === 'RUNNING' ? 'bg-blue-100 text-blue-800' :
+                                            job.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                                                'bg-gray-100 text-gray-800'
                                         }`}>
                                         {job.status}
                                     </span>

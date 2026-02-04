@@ -1,16 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Save, Trash2, Sparkles } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Save, Trash2, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { generateCommits } from '@/app/actions/commits';
+import { subDays } from 'date-fns';
 
 interface ContributionDay {
     week: number;
     day: number;
     selected: boolean;
+}
+
+interface Repository {
+    id: number;
+    name: string;
+    fullName: string;
+    private: boolean;
 }
 
 export function ContributionGrid() {
@@ -26,6 +37,30 @@ export function ContributionGrid() {
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawMode, setDrawMode] = useState<'fill' | 'erase'>('fill');
+
+    // Repository handling
+    const [repositories, setRepositories] = useState<Repository[]>([]);
+    const [selectedRepo, setSelectedRepo] = useState('');
+    const [loadingRepos, setLoadingRepos] = useState(true);
+    const [generating, setGenerating] = useState(false);
+
+    useEffect(() => {
+        async function fetchRepositories() {
+            try {
+                const response = await fetch('/api/github/repositories');
+                const data = await response.json();
+                if (response.ok) {
+                    setRepositories(data.repositories || []);
+                }
+            } catch (error) {
+                console.error('Failed to load repositories', error);
+                toast.error('Failed to load repositories');
+            } finally {
+                setLoadingRepos(false);
+            }
+        }
+        fetchRepositories();
+    }, []);
 
     const toggleCell = (week: number, day: number) => {
         setGrid((prev) =>
@@ -66,6 +101,62 @@ export function ContributionGrid() {
         );
     };
 
+    const handleGenerateCommits = async () => {
+        if (!selectedRepo) {
+            toast.error('Please select a repository first');
+            return;
+        }
+
+        const selectedCells = grid.filter(cell => cell.selected);
+        if (selectedCells.length === 0) return;
+
+        setGenerating(true);
+        toast.info('Generating commits...', { description: 'Please wait while we communicate with GitHub.' });
+
+        try {
+            // Calculate dates
+            // Default: week 51 is current week.
+            const today = new Date();
+            const currentDayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
+
+            const pattern = selectedCells.map(cell => {
+                // Calculate difference in days from today
+                // week 51, currentDayOfWeek = today
+                // diff = (51 - cell.week) * 7 + (currentDayOfWeek - cell.day)
+
+                const weekDiff = 51 - cell.week;
+                const dayDiff = currentDayOfWeek - cell.day;
+                const totalDaysDiff = (weekDiff * 7) + dayDiff;
+
+                const date = subDays(today, totalDaysDiff);
+
+                return {
+                    date: date.toISOString().split('T')[0], // YYYY-MM-DD
+                    count: 1 // Default to 1 commit per selected cell
+                };
+            });
+
+            // Process via server action
+            const result = await generateCommits(selectedRepo, pattern);
+
+            if (result.success) {
+                toast.success('Commits generated successfully!', {
+                    description: `Created ${result.commitsCreated} commits. They should appear on your GitHub profile shortly.`
+                });
+            } else if (result.error) {
+                toast.error('Failed to generate commits', {
+                    description: result.error
+                });
+            }
+
+        } catch (error) {
+            console.error('Commit generation error:', error);
+            toast.error('An unexpected error occurred');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
     const selectedCount = grid.filter((cell) => cell.selected).length;
 
     return (
@@ -77,7 +168,7 @@ export function ContributionGrid() {
                         Click to toggle individual days, or drag to paint multiple days
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex gap-4">
+                <CardContent className="flex flex-wrap gap-4">
                     <Button
                         variant={drawMode === 'fill' ? 'default' : 'outline'}
                         onClick={() => setDrawMode('fill')}
@@ -90,7 +181,7 @@ export function ContributionGrid() {
                     >
                         Erase Mode
                     </Button>
-                    <Separator orientation="vertical" className="h-10" />
+                    <Separator orientation="vertical" className="h-10 hidden sm:block" />
                     <Button variant="outline" onClick={generateRandomPattern}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Random
@@ -156,19 +247,55 @@ export function ContributionGrid() {
                         Create commit jobs based on your selected pattern
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex gap-4">
+                <CardContent className="space-y-4">
+                    <div className="grid gap-2">
+                        <Label>Target Repository</Label>
+                        {loadingRepos ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 border rounded-md">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading repositories...
+                            </div>
+                        ) : (
+                            <Select value={selectedRepo} onValueChange={setSelectedRepo}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a repository..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {repositories.map((repo) => (
+                                        <SelectItem key={repo.id} value={repo.fullName}>
+                                            <div className="flex items-center gap-2">
+                                                <span>{repo.fullName}</span>
+                                                {repo.private && (
+                                                    <span className="text-xs bg-muted px-2 py-0.5 rounded">Private</span>
+                                                )}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                            Commits will be backdated to match the calendar pattern selected above.
+                        </p>
+                    </div>
+
                     <Button
                         className="w-full"
                         size="lg"
-                        disabled={selectedCount === 0}
-                        onClick={() => {
-                            toast.info('Commit job creation coming soon!', {
-                                description: `You selected ${selectedCount} days to commit`,
-                            });
-                        }}
+                        disabled={selectedCount === 0 || !selectedRepo || generating}
+                        onClick={handleGenerateCommits}
                     >
-                        <Save className="mr-2 h-5 w-5" />
-                        Generate {selectedCount} Commits
+                        {generating ? (
+                            <>
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="mr-2 h-5 w-5" />
+                                Generate {selectedCount} Commits
+                            </>
+                        )}
                     </Button>
                 </CardContent>
             </Card>

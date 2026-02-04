@@ -28,6 +28,7 @@ export default function NewTaskPage() {
     const [repositories, setRepositories] = useState<Repository[]>([]);
     const [selectedRepo, setSelectedRepo] = useState('');
     const [taskName, setTaskName] = useState('');
+    const [scheduleTime, setScheduleTime] = useState('09:00');
     const [schedule, setSchedule] = useState('0 9 * * *'); // Default: Daily at 9 AM
 
     useEffect(() => {
@@ -177,17 +178,25 @@ export default function NewTaskPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="schedule">Schedule (Cron Expression)</Label>
+                            <Label htmlFor="time">Schedule Time (Daily)</Label>
                             <Input
-                                id="schedule"
-                                placeholder="0 9 * * *"
-                                value={schedule}
-                                onChange={(e) => setSchedule(e.target.value)}
+                                id="time"
+                                type="time"
+                                value={scheduleTime}
+                                onChange={(e) => {
+                                    setScheduleTime(e.target.value);
+                                    // Convert to cron: MM HH * * *
+                                    const [hours, minutes] = e.target.value.split(':');
+                                    setSchedule(`${minutes} ${hours} * * *`);
+                                }}
                                 required
                             />
                             <p className="text-xs text-muted-foreground">
-                                Default: Daily at 9:00 AM (0 9 * * *)
+                                Task will run daily at this time.
                             </p>
+                            <div className="text-xs text-muted-foreground mt-1">
+                                Cron Expression: <span className="font-mono bg-muted px-1 rounded">{schedule}</span>
+                            </div>
                         </div>
 
                         <div className="flex gap-2 pt-4">

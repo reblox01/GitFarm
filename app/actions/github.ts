@@ -16,7 +16,8 @@ export async function initiateGitHubLink() {
     }
 
     // Use NextAuth's signIn with GitHub provider
-    // This will handle the OAuth flow and redirect back
+    // This uses the standard /api/auth/callback/github redirect URI
+    // which is likely already configured in the user's GitHub App
     await signIn('github', {
         redirectTo: '/dashboard/settings?tab=integrations',
         redirect: true,

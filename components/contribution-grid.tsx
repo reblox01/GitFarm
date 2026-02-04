@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Save, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { GitGraph, Trash2, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateCommits } from '@/app/actions/commits';
+import { getRepoState, createCommitBatch, pushChanges, initializeRepository } from '@/app/actions/commits';
 import { subDays } from 'date-fns';
+import { CommitProgressDialog, ProgressStep } from './commit-progress-dialog';
 
 interface ContributionDay {
     week: number;
@@ -42,7 +43,12 @@ export function ContributionGrid() {
     const [repositories, setRepositories] = useState<Repository[]>([]);
     const [selectedRepo, setSelectedRepo] = useState('');
     const [loadingRepos, setLoadingRepos] = useState(true);
-    const [generating, setGenerating] = useState(false);
+
+    // Progress State
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [progressStep, setProgressStep] = useState<ProgressStep>('idle');
+    const [progress, setProgress] = useState({ current: 0, total: 0 });
+    const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
     useEffect(() => {
         async function fetchRepositories() {
@@ -110,57 +116,159 @@ export function ContributionGrid() {
         const selectedCells = grid.filter(cell => cell.selected);
         if (selectedCells.length === 0) return;
 
-        setGenerating(true);
-        toast.info('Generating commits...', { description: 'Please wait while we communicate with GitHub.' });
+        // Reset and Open Dialog
+        setIsGenerating(true);
+        setProgressStep('init');
+        setProgress({ current: 0, total: selectedCells.length });
+        setErrorMessage(undefined);
 
         try {
-            // Calculate dates
-            // Default: week 51 is current week.
+            // 1. Calculate Dates
             const today = new Date();
             const currentDayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
+            const commitsToCreate: { date: string; message: string; parentSha: string }[] = [];
 
-            const pattern = selectedCells.map(cell => {
-                // Calculate difference in days from today
-                // week 51, currentDayOfWeek = today
-                // diff = (51 - cell.week) * 7 + (currentDayOfWeek - cell.day)
+            // We need to build the list first to know total count and iterate easily
+            // Note: We need parentSha for each commit, which depends on the previous one.
+            // Client-side, we can just prepare dates. The logic loop will handle chaining SHAs.
 
+            const rawCommits = selectedCells.map(cell => {
                 const weekDiff = 51 - cell.week;
                 const dayDiff = currentDayOfWeek - cell.day;
                 const totalDaysDiff = (weekDiff * 7) + dayDiff;
-
                 const date = subDays(today, totalDaysDiff);
-
+                // Random time between 9am and 6pm
+                date.setHours(9 + Math.floor(Math.random() * 9), Math.floor(Math.random() * 60), 0);
                 return {
-                    date: date.toISOString().split('T')[0], // YYYY-MM-DD
-                    count: 1 // Default to 1 commit per selected cell
+                    date: date.toISOString(),
+                    message: `Contribution: ${date.toISOString().split('T')[0]}`
                 };
-            });
+            }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // IMPORTANT: Sort chronologically
 
-            // Process via server action
-            const result = await generateCommits(selectedRepo, pattern);
+            setProgress({ current: 0, total: rawCommits.length });
 
-            if (result.success) {
-                toast.success('Commits generated successfully!', {
-                    description: `Created ${result.commitsCreated} commits. They should appear on your GitHub profile shortly.`
-                });
-            } else if (result.error) {
-                toast.error('Failed to generate commits', {
-                    description: result.error
-                });
+            // 2. Initial Repo State (Get HEAD)
+            const repoState = await getRepoState(selectedRepo);
+            if (repoState.error || !repoState.sha || !repoState.branch) {
+                throw new Error(repoState.error || 'Failed to initialize repository state');
             }
 
-        } catch (error) {
-            console.error('Commit generation error:', error);
-            toast.error('An unexpected error occurred');
-        } finally {
-            setGenerating(false);
+            let currentParentSha = repoState.sha;
+            const BATCH_SIZE = 10;
+            let processed = 0;
+
+            // 3. Process in Batches
+            setProgressStep('creating');
+
+            for (let i = 0; i < rawCommits.length; i += BATCH_SIZE) {
+                const batch = rawCommits.slice(i, i + BATCH_SIZE).map(c => ({
+                    ...c,
+                    parentSha: '' // Will be set in the loop logic if we were creating individually, but for batch API we need to pass chain
+                }));
+                // Wait, our batch API `createCommitBatch` handles a list.
+                // But it assumes `parentSha` is passed for each.
+                // We actually need to chain them: commit[0].parent = HEAD, commit[1].parent = commit[0].sha
+                // BUT server batch action iterates.
+                // So we pass the *starting* parent SHA to the server action, or pass the full chain?
+                // Step 1285 `createCommitBatch`:
+                // takes `commits: { ... parentSha }[]`.
+                // And iterates: `let currentParentSha = commits[0].parentSha`.
+                // Then inside loop: `parents: [currentParentSha]`. `currentParentSha = newCommit.sha`.
+                // So if we pass a batch, we only really need to provide `parentSha` for the FIRST item?
+                // Actually my implementation uses `commits[i].parentSha`?
+                // No: `let currentParentSha = commits[0].parentSha;`
+                // Then loop `for (const commit of commits)`.
+                // It uses `currentParentSha` (from variable) as parent.
+                // So the `parentSha` property on individual commit objects in the array is IGNORED after the first one.
+                // Correct.
+
+                // Construct the batch for the API
+                const batchPayload = batch.map((c, index) => ({
+                    date: c.date,
+                    message: c.message,
+                    parentSha: index === 0 ? currentParentSha : 'ignore' // Logic uses currentParentSha variable
+                }));
+
+                const batchResult = await createCommitBatch(selectedRepo, batchPayload);
+
+                if (batchResult.error || !batchResult.lastSha) {
+                    throw new Error(batchResult.error || 'Failed to create commit batch');
+                }
+
+                currentParentSha = batchResult.lastSha;
+                processed += batchResult.count || 0;
+                setProgress(prev => ({ ...prev, current: processed }));
+            }
+
+            // 4. Push Changes
+            setProgressStep('pushing');
+            const pushResult = await pushChanges(selectedRepo, repoState.branch, currentParentSha);
+
+            if (pushResult.error) {
+                throw new Error(pushResult.error);
+            }
+
+            // Done!
+            setProgressStep('complete');
+
+        } catch (error: any) {
+            console.error('Generation process failed:', error);
+            setErrorMessage(error.message || 'An unknown error occurred');
+            setProgressStep('error');
+        }
+    };
+
+    const handleCloseDialog = () => {
+        setIsGenerating(false);
+        // Only refresh if complete? Users might want to see error.
+        if (progressStep === 'complete') {
+            window.location.reload(); // Refresh to see stats if needed, or just rely on revalidatePath
+        }
+    };
+
+    const handleInitializeRepo = async () => {
+        if (!selectedRepo) return;
+
+        setProgressStep('init');
+        setErrorMessage(undefined);
+
+        try {
+            const result = await initializeRepository(selectedRepo);
+            if (result.success) {
+                toast.success('Repository initialized successfully!');
+                setProgressStep('idle');
+                setIsGenerating(false);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            setErrorMessage(error.message);
+            setProgressStep('error');
         }
     };
 
     const selectedCount = grid.filter((cell) => cell.selected).length;
+    const isRepoEmptyError = errorMessage?.toLowerCase().includes('empty');
 
     return (
         <div className="space-y-6" onMouseUp={handleMouseUp}>
+            <CommitProgressDialog
+                isOpen={isGenerating}
+                step={progressStep}
+                progress={progress}
+                message={errorMessage}
+                onClose={handleCloseDialog}
+                actionLabel={isRepoEmptyError ? "Initialize Repository" : undefined}
+                onAction={isRepoEmptyError ? handleInitializeRepo : undefined}
+            />
+
+            {/* Show specific error action if applicable - actually we can put this INSIDE the dialog or show a toast action */}
+            {/* But since we use a custom dialog, maybe we should pass an 'action' prop to it? */}
+            {/* Or render another dialog? */}
+            {/* Let's simplify: If errorMessage contains "empty", we can show a button in the main UI or modify the dialog. */}
+            {/* I will modify CommitProgressDialog to accept an optional 'action' button. */}
+
+
             <Card>
                 <CardHeader>
                     <CardTitle>Draw Mode</CardTitle>
@@ -282,23 +390,23 @@ export function ContributionGrid() {
                     <Button
                         className="w-full"
                         size="lg"
-                        disabled={selectedCount === 0 || !selectedRepo || generating}
+                        disabled={selectedCount === 0 || !selectedRepo || isGenerating}
                         onClick={handleGenerateCommits}
                     >
-                        {generating ? (
+                        {isGenerating ? (
                             <>
                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Generating...
+                                Processing...
                             </>
                         ) : (
                             <>
-                                <Save className="mr-2 h-5 w-5" />
+                                <GitGraph className="mr-2 h-5 w-5" />
                                 Generate {selectedCount} Commits
                             </>
                         )}
                     </Button>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }

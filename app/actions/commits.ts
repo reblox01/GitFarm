@@ -4,177 +4,176 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
-interface GenerateCommitsResult {
-    success?: boolean;
-    error?: string;
-    commitsCreated?: number;
+// Shared validation helper
+async function getGitHubAccount(userId: string) {
+    const account = await prisma.account.findFirst({
+        where: { userId, provider: 'github' },
+        select: { access_token: true },
+    });
+    if (!account?.access_token) throw new Error('GitHub not connected');
+    return account.access_token;
 }
 
-/**
- * Generate commits on a specific repository
- * @param repository Full repository name (owner/repo)
- * @param pattern Array of dates to commit on (YYYY-MM-DD)
- */
-export async function generateCommits(
-    repository: string,
-    pattern: { date: string; count: number }[]
-): Promise<GenerateCommitsResult> {
+export async function getRepoState(repository: string) {
     const session = await auth();
-
-    if (!session?.user?.id) {
-        return { error: 'Unauthorized' };
-    }
+    if (!session?.user?.id) return { error: 'Unauthorized' };
 
     try {
-        // 1. Get GitHub Access Token
-        const account = await prisma.account.findFirst({
-            where: {
-                userId: session.user.id,
-                provider: 'github',
-            },
-            select: { access_token: true },
-        });
+        const token = await getGitHubAccount(session.user.id);
 
-        if (!account?.access_token) {
-            return { error: 'GitHub not connected' };
-        }
-
-        // 2. Verify Repository Access & Get Default Branch
+        // Get default branch
         const repoResponse = await fetch(`https://api.github.com/repos/${repository}`, {
-            headers: {
-                'Authorization': `Bearer ${account.access_token}`,
-                'Accept': 'application/vnd.github.v3+json',
-            },
+            headers: { 'Authorization': `Bearer ${token}` },
         });
-
-        if (!repoResponse.ok) {
-            return { error: 'Repository not found or access denied' };
-        }
-
+        if (!repoResponse.ok) return { error: 'Repository not found' };
         const repoData = await repoResponse.json();
         const defaultBranch = repoData.default_branch;
 
-        // 3. Get Reference to HEAD
-        const refResponse = await fetch(`https://api.github.com/repos/${repository}/git/ref/heads/${defaultBranch}`, {
-            headers: {
-                'Authorization': `Bearer ${account.access_token}`,
-                'Accept': 'application/vnd.github.v3+json',
-            },
+        // Get HEAD sha
+        const refUrl = `https://api.github.com/repos/${repository}/git/ref/heads/${defaultBranch}`;
+        const refResponse = await fetch(refUrl, {
+            headers: { 'Authorization': `Bearer ${token}` },
         });
 
         if (!refResponse.ok) {
-            return { error: 'Failed to fetch repository reference' };
+            const errorText = await refResponse.text();
+            console.error(`Failed to fetch HEAD (${refResponse.status}):`, errorText);
+
+            if (refResponse.status === 409) {
+                return { error: 'Repository is empty. Please initialize it with a commit first.' };
+            }
+            if (refResponse.status === 404) {
+                return { error: `Branch '${defaultBranch}' not found. Is the repository empty?` };
+            }
+
+            return { error: `Failed to fetch HEAD: ${refResponse.status} ${errorText}` };
         }
 
         const refData = await refResponse.json();
-        let currentCommitSha = refData.object.sha;
-        let commitsCreated = 0;
 
-        // 4. Create Commits Sequentially
-        // Note: For large patterns, this might timeout. Standard Vercel timeout is 10s (Hobby) / 60s (Pro).
-        // We should process in chunks or limit the batch size.
-        // For now, we'll process up to 20 commits in one go to be safe.
+        return {
+            success: true,
+            sha: refData.object.sha,
+            branch: defaultBranch,
+        };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
 
-        const MAX_COMMITS_PER_BATCH = 20;
-        let processedCount = 0;
+export async function createCommitBatch(
+    repository: string,
+    commits: { date: string; message: string; parentSha: string }[]
+) {
+    const session = await auth();
+    if (!session?.user?.id) return { error: 'Unauthorized' };
 
-        // Flatten the pattern into individual commits
-        const commitQueue: string[] = [];
-        for (const day of pattern) {
-            for (let i = 0; i < day.count; i++) {
-                commitQueue.push(day.date);
-            }
-        }
+    try {
+        const token = await getGitHubAccount(session.user.id);
+        const results: { sha: string; date: string }[] = [];
+        let currentParentSha = commits[0].parentSha;
 
-        // Process a batch
-        const batch = commitQueue.slice(0, MAX_COMMITS_PER_BATCH);
-
-        for (const dateStr of batch) {
-            // Create a pseudo-random time for the commit (between 9 AM and 6 PM)
-            const date = new Date(dateStr);
-            date.setHours(9 + Math.floor(Math.random() * 9), Math.floor(Math.random() * 60), 0);
-
-            const isoDate = date.toISOString();
-
-            // A. Create Tree (we'll just use the previous commit's tree to keep it empty/clean)
-            const commitInfoResponse = await fetch(`https://api.github.com/repos/${repository}/git/commits/${currentCommitSha}`, {
-                headers: {
-                    'Authorization': `Bearer ${account.access_token}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                },
+        for (const commit of commits) {
+            // Get tree from parent (empty tree trick or just use parent's tree)
+            const commitInfoResponse = await fetch(`https://api.github.com/repos/${repository}/git/commits/${currentParentSha}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
             });
             const commitInfo = await commitInfoResponse.json();
             const treeSha = commitInfo.tree.sha;
 
-            // B. Create Commit
-            const createCommitResponse = await fetch(`https://api.github.com/repos/${repository}/git/commits`, {
+            // Create commit
+            const response = await fetch(`https://api.github.com/repos/${repository}/git/commits`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${account.access_token}`,
-                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: `Contribution: ${dateStr}`,
+                    message: commit.message,
                     tree: treeSha,
-                    parents: [currentCommitSha],
+                    parents: [currentParentSha],
                     author: {
                         name: session.user.name || 'GitFarm User',
                         email: session.user.email,
-                        date: isoDate,
+                        date: commit.date,
                     },
                     committer: {
                         name: session.user.name || 'GitFarm User',
                         email: session.user.email,
-                        date: isoDate, // Backdating happening here
+                        date: commit.date,
                     },
                 }),
             });
 
-            if (!createCommitResponse.ok) {
-                console.error('Failed to create commit:', await createCommitResponse.text());
-                continue;
+            if (!response.ok) {
+                console.error('Commit failed:', await response.text());
+                throw new Error('Failed to create commit');
             }
 
-            const newCommit = await createCommitResponse.json();
-            currentCommitSha = newCommit.sha;
-            commitsCreated++;
+            const newCommit = await response.json();
+            currentParentSha = newCommit.sha;
+            results.push({ sha: newCommit.sha, date: commit.date });
         }
 
-        // 5. Update Reference (Push)
-        if (commitsCreated > 0) {
-            const updateRefResponse = await fetch(`https://api.github.com/repos/${repository}/git/refs/heads/${defaultBranch}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${account.access_token}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    sha: currentCommitSha,
-                    force: false,
-                }),
-            });
+        return { success: true, lastSha: currentParentSha, count: results.length };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
 
-            if (!updateRefResponse.ok) {
-                return { error: 'Failed to push commits' };
-            }
-        }
+export async function pushChanges(repository: string, branch: string, sha: string) {
+    const session = await auth();
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    try {
+        const token = await getGitHubAccount(session.user.id);
+        const response = await fetch(`https://api.github.com/repos/${repository}/git/refs/heads/${branch}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sha, force: false }),
+        });
+
+        if (!response.ok) return { error: 'Failed to push changes' };
 
         revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
 
-        if (batch.length < commitQueue.length) {
-            return {
-                success: true,
-                commitsCreated,
-                error: `Processed ${commitsCreated} commits. ${commitQueue.length - commitsCreated} remaining (batch limit). Please click Generate again.`
-            };
+export async function initializeRepository(repository: string) {
+    const session = await auth();
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    try {
+        const token = await getGitHubAccount(session.user.id);
+
+        // Create README.md
+        const content = Buffer.from(`# ${repository.split('/')[1]}\n\nInitialized by GitFarm`).toString('base64');
+
+        const response = await fetch(`https://api.github.com/repos/${repository}/contents/README.md`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: 'Initial commit',
+                content: content,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            return { error: `Failed to initialize: ${errorText}` };
         }
 
-        return { success: true, commitsCreated };
-
-    } catch (error) {
-        console.error('Generate commits error:', error);
-        return { error: 'Internal server error' };
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
     }
 }

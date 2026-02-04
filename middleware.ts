@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+\]import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { checkRateLimit, apiLimiter } from './lib/rate-limit';
 
 export async function middleware(request: NextRequest) {
     // Rate limiting for API routes
     if (request.nextUrl.pathname.startsWith('/api/')) {
-        const ip = request.ip || request.headers.get('x-forwarded-for') || 'anonymous';
+        const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'anonymous';
         const { success, remaining } = await checkRateLimit(apiLimiter, ip);
 
         if (!success) {

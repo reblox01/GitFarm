@@ -164,14 +164,15 @@ model SiteSettings {
 // ========================
 
 model Task {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String
-  schedule  String // cron expression
-  pattern   Json // contribution pattern data
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  repository String? // GitHub repository full name (owner/repo)
+  schedule   String // cron expression
+  pattern    Json // contribution pattern data
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

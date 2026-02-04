@@ -3,14 +3,16 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Github, CheckCircle2, XCircle } from 'lucide-react';
 import { initiateGitHubLink, disconnectGitHub } from '@/app/actions/github';
-import { prisma } from '@/lib/db';
 import { toast } from 'sonner';
 
 export function GitHubIntegration({ userId }: { userId: string }) {
     const [loading, setLoading] = useState(false);
     const [connected, setConnected] = useState(false);
+    const [username, setUsername] = useState<string | null>(null);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [checking, setChecking] = useState(true);
 
     useEffect(() => {
@@ -20,6 +22,8 @@ export function GitHubIntegration({ userId }: { userId: string }) {
                 const response = await fetch('/api/github/status');
                 const data = await response.json();
                 setConnected(data.connected);
+                setUsername(data.username);
+                setAvatarUrl(data.avatarUrl);
             } catch (error) {
                 console.error('Failed to check GitHub connection:', error);
             } finally {
@@ -48,6 +52,8 @@ export function GitHubIntegration({ userId }: { userId: string }) {
         const result = await disconnectGitHub();
         if (result?.success) {
             setConnected(false);
+            setUsername(null);
+            setAvatarUrl(null);
             toast.success('GitHub account disconnected');
         } else if (result?.error) {
             toast.error('Failed to disconnect', {
@@ -84,10 +90,17 @@ export function GitHubIntegration({ userId }: { userId: string }) {
             <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Github className="h-10 w-10" />
+                        {connected && avatarUrl ? (
+                            <Avatar className="h-10 w-10">
+                                <AvatarImage src={avatarUrl} alt={username || 'GitHub'} />
+                                <AvatarFallback><Github className="h-5 w-5" /></AvatarFallback>
+                            </Avatar>
+                        ) : (
+                            <Github className="h-10 w-10" />
+                        )}
                         <div>
                             <p className="font-medium flex items-center gap-2">
-                                GitHub Account
+                                {connected && username ? `@${username}` : 'GitHub Account'}
                                 {connected ? (
                                     <CheckCircle2 className="h-4 w-4 text-green-500" />
                                 ) : (

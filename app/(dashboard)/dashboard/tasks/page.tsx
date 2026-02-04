@@ -96,14 +96,21 @@ export default async function TasksPage() {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex items-center gap-2">
-                                    <div
-                                        className={`h-2 w-2 rounded-full ${task.active ? 'bg-green-500' : 'bg-gray-400'
-                                            }`}
-                                    />
-                                    <span className="text-sm text-muted-foreground">
-                                        {task.active ? 'Active' : 'Paused'}
-                                    </span>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className={`h-2 w-2 rounded-full ${task.active ? 'bg-green-500' : 'bg-gray-400'
+                                                }`}
+                                        />
+                                        <span className="text-sm text-muted-foreground">
+                                            {task.active ? 'Active' : 'Paused'}
+                                        </span>
+                                    </div>
+                                    {task.repository && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Repository: <span className="font-mono">{task.repository}</span>
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

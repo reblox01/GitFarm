@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Github, CheckCircle2, XCircle } from 'lucide-react';
-import { initiateGitHubLink, disconnectGitHub } from '@/app/actions/github';
+import { disconnectGitHub } from '@/app/actions/github'; // Removed initiateGitHubLink
 import { toast } from 'sonner';
 import {
     AlertDialog,
@@ -26,36 +26,51 @@ export function GitHubIntegration({ userId }: { userId: string }) {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [checking, setChecking] = useState(true);
 
-    useEffect(() => {
-        // Check if GitHub account is connected on mount
-        async function checkConnection() {
-            try {
-                const response = await fetch('/api/github/status');
-                const data = await response.json();
-                setConnected(data.connected);
-                setUsername(data.username);
-                setAvatarUrl(data.avatarUrl);
-            } catch (error) {
-                console.error('Failed to check GitHub connection:', error);
-            } finally {
-                setChecking(false);
-            }
+    const checkConnection = useCallback(async () => {
+        try {
+            const response = await fetch('/api/github/status');
+            const data = await response.json();
+            setConnected(data.connected);
+            setUsername(data.username);
+            setAvatarUrl(data.avatarUrl);
+        } catch (error) {
+            console.error('Failed to check GitHub connection:', error);
+        } finally {
+            setChecking(false);
         }
-        checkConnection();
     }, []);
 
-    async function handleConnect() {
-        setLoading(true);
-        try {
-            await initiateGitHubLink();
-        } catch (error) {
-            console.error('GitHub connection error:', error);
-            setLoading(false);
-        }
-    }
+    useEffect(() => {
+        checkConnection();
+
+        // Listen for popup success message
+        const handleMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+
+            if (event.data === 'github-connected') {
+                toast.success('GitHub connected successfully!');
+                checkConnection();
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [checkConnection]);
+
+    const handleConnect = () => {
+        const width = 600;
+        const height = 700;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+
+        window.open(
+            '/api/auth/start-github',
+            'GitHub Connect',
+            `width=${width},height=${height},left=${left},top=${top}`
+        );
+    };
 
     async function handleDisconnect() {
-
         setLoading(true);
         const result = await disconnectGitHub();
         if (result?.success) {

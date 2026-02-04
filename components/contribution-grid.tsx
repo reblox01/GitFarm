@@ -1,0 +1,175 @@
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Save, Trash2, Sparkles } from 'lucide-react';
+
+interface ContributionDay {
+    week: number;
+    day: number;
+    selected: boolean;
+}
+
+export function ContributionGrid() {
+    const [grid, setGrid] = useState<ContributionDay[]>(() => {
+        const days = [];
+        for (let week = 0; week < 52; week++) {
+            for (let day = 0; day < 7; day++) {
+                days.push({ week, day, selected: false });
+            }
+        }
+        return days;
+    });
+
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [drawMode, setDrawMode] = useState<'fill' | 'erase'>('fill');
+
+    const toggleCell = (week: number, day: number) => {
+        setGrid((prev) =>
+            prev.map((cell) =>
+                cell.week === week && cell.day === day
+                    ? { ...cell, selected: drawMode === 'fill' ? true : false }
+                    : cell
+            )
+        );
+    };
+
+    const handleMouseDown = (week: number, day: number) => {
+        setIsDrawing(true);
+        toggleCell(week, day);
+    };
+
+    const handleMouseEnter = (week: number, day: number) => {
+        if (isDrawing) {
+            toggleCell(week, day);
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDrawing(false);
+    };
+
+    const clearGrid = () => {
+        setGrid((prev) => prev.map((cell) => ({ ...cell, selected: false })));
+    };
+
+    const fillAll = () => {
+        setGrid((prev) => prev.map((cell) => ({ ...cell, selected: true })));
+    };
+
+    const generateRandomPattern = () => {
+        setGrid((prev) =>
+            prev.map((cell) => ({ ...cell, selected: Math.random() > 0.7 }))
+        );
+    };
+
+    const selectedCount = grid.filter((cell) => cell.selected).length;
+
+    return (
+        <div className="space-y-6" onMouseUp={handleMouseUp}>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Draw Mode</CardTitle>
+                    <CardDescription>
+                        Click to toggle individual days, or drag to paint multiple days
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex gap-4">
+                    <Button
+                        variant={drawMode === 'fill' ? 'default' : 'outline'}
+                        onClick={() => setDrawMode('fill')}
+                    >
+                        Fill Mode
+                    </Button>
+                    <Button
+                        variant={drawMode === 'erase' ? 'default' : 'outline'}
+                        onClick={() => setDrawMode('erase')}
+                    >
+                        Erase Mode
+                    </Button>
+                    <Separator orientation="vertical" className="h-10" />
+                    <Button variant="outline" onClick={generateRandomPattern}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Random
+                    </Button>
+                    <Button variant="outline" onClick={fillAll}>
+                        Fill All
+                    </Button>
+                    <Button variant="outline" onClick={clearGrid}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clear
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Contribution Calendar</CardTitle>
+                    <CardDescription>
+                        {selectedCount} days selected (~{selectedCount} commits)
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="overflow-x-auto pb-4">
+                        <div className="inline-flex gap-1">
+                            {Array.from({ length: 52 }, (_, week) => (
+                                <div key={week} className="flex flex-col gap-1">
+                                    {Array.from({ length: 7 }, (_, day) => {
+                                        const cell = grid.find((c) => c.week === week && c.day === day);
+                                        return (
+                                            <div
+                                                key={`${week}-${day}`}
+                                                className={`w-3 h-3 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-green-400 ${cell?.selected
+                                                        ? 'bg-green-600 hover:bg-green-700'
+                                                        : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'
+                                                    }`}
+                                                onMouseDown={() => handleMouseDown(week, day)}
+                                                onMouseEnter={() => handleMouseEnter(week, day)}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
+                        <span>Less</span>
+                        <div className="flex gap-1">
+                            <div className="w-3 h-3 rounded-sm bg-slate-200 dark:bg-slate-800" />
+                            <div className="w-3 h-3 rounded-sm bg-green-200" />
+                            <div className="w-3 h-3 rounded-sm bg-green-400" />
+                            <div className="w-3 h-3 rounded-sm bg-green-600" />
+                        </div>
+                        <span>More</span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Generate Commits</CardTitle>
+                    <CardDescription>
+                        Create commit jobs based on your selected pattern
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex gap-4">
+                    <Button
+                        className="w-full"
+                        size="lg"
+                        disabled={selectedCount === 0}
+                        onClick={() => {
+                            // TODO: Implement commit job creation
+                            alert('Commit job creation coming soon!');
+                        }}
+                    >
+                        <Save className="mr-2 h-5 w-5" />
+                        Generate {selectedCount} Commits
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GitFarm - Web Application
 
-## Getting Started
+A modern, full-stack SaaS platform for managing GitHub contributions with automated commit generation, visual contribution editing, and subscription management.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **GitHub OAuth Authentication** - Secure login with GitHub
+- **Visual Contribution Editor** - Paint your contribution graph
+- **Automated Tasks** - Schedule recurring commits
+- **Admin Dashboard** - Manage users, plans, and features
+- **Dual Payment Providers** - Support for Stripe and Lemon Squeezy
+- **OWASP Security** - Rate limiting, CSP headers, input validation
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📦 Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: Next.js 15 (App Router)
+- **Package Manager**: Bun
+- **Database**: PostgreSQL + Prisma ORM
+- **Auth**: NextAuth.js v5
+- **UI**: Tailwind CSS + shadcn/ui + MagicUI
+- **Payments**: Stripe + Lemon Squeezy
+- **Rate Limiting**: Upstash Redis
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Setup
 
-## Learn More
+1. **Clone and install:**
+   ```bash
+   git clone https://github.com/reblox01/GitFarm.git
+   cd gitfarm
+   bun install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   Fill in your:
+   - Database URL
+   - GitHub OAuth credentials
+   - Upstash Redis credentials (optional, for rate limiting)
+   - Stripe/Lemon Squeezy API keys (optional)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Set up database:**
+   ```bash
+   bunx prisma generate
+   bunx prisma db push
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Run development server:**
+   ```bash
+   bun dev
+   ```
 
-## Deploy on Vercel
+## 📝 Development Status
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is currently in active development. Core features implemented:
+- ✅ GitHub OAuth authentication
+- ✅ Database schema with Prisma
+- ✅ Dashboard UI with navigation
+- ✅ Payment provider abstraction
+- ✅ Security headers and rate limiting
+- 🚧 Contribution editor (in progress)
+- 🚧 Commit generation engine (in progress)
+- 🚧 Admin dashboard (in progress)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔒 Security
+
+This application follows OWASP security guidelines:
+- Input validation with Zod
+- Rate limiting on all API routes
+- CSP and security headers
+- Secure cookie handling
+- No hardcoded secrets
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 👤 Author
+
+Built by [@reblox01](https://github.com/reblox01)

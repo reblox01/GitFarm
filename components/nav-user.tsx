@@ -8,6 +8,7 @@ import {
     LogOut,
     Sparkles,
 } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 import {
     Avatar,
@@ -101,6 +102,13 @@ export function NavUser({
                                 Notifications
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        <div className="px-2 py-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm">Theme</span>
+                                <ThemeToggle />
+                            </div>
+                        </div>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => window.location.href = '/api/auth/signout'}>
                             <LogOut />

@@ -60,6 +60,11 @@ const data = {
             url: "/dashboard/tasks",
             icon: Calendar,
         },
+        {
+            title: "Settings",
+            url: "/dashboard/settings",
+            icon: Settings2,
+        },
     ],
     navAdmin: [
         {

@@ -15,8 +15,9 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  githubId  String   @unique
+  githubId  String?  @unique
   email     String   @unique
+  password  String? // For email/password auth
   name      String?
   avatarUrl String?
   role      Role     @default(USER)

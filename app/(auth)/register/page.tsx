@@ -5,11 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { handleCredentialsSignIn, handleGithubSignIn } from '../actions';
-import { Github } from 'lucide-react';
+import { handleRegister } from '../actions';
 
-export default async function LoginPage() {
+export default async function RegisterPage() {
     const session = await auth();
 
     if (session) {
@@ -30,13 +28,23 @@ export default async function LoginPage() {
 
                 <Card className="border-2">
                     <CardHeader>
-                        <CardTitle>Welcome Back</CardTitle>
+                        <CardTitle>Create Account</CardTitle>
                         <CardDescription>
-                            Sign in to your account to continue
+                            Get started with GitFarm today
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <form action={handleCredentialsSignIn} className="space-y-4">
+                    <CardContent>
+                        <form action={handleRegister} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input
+                                    id="name"
+                                    name="name"
+                                    type="text"
+                                    placeholder="John Doe"
+                                    required
+                                />
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
@@ -55,41 +63,23 @@ export default async function LoginPage() {
                                     type="password"
                                     placeholder="••••••••"
                                     required
+                                    minLength={8}
                                 />
+                                <p className="text-xs text-muted-foreground">
+                                    Must be at least 8 characters long
+                                </p>
                             </div>
                             <Button type="submit" className="w-full">
-                                Sign In
-                            </Button>
-                        </form>
-
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <Separator />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-background px-2 text-muted-foreground">
-                                    Or continue with
-                                </span>
-                            </div>
-                        </div>
-
-                        <form action={handleGithubSignIn}>
-                            <Button
-                                type="submit"
-                                variant="outline"
-                                className="w-full"
-                            >
-                                <Github className="mr-2 h-4 w-4" />
-                                GitHub
+                                Create Account
                             </Button>
                         </form>
                     </CardContent>
                 </Card>
 
                 <p className="text-center text-sm text-slate-500 mt-6">
-                    Don&apos;t have an account?{' '}
-                    <Link href="/register" className="text-green-600 hover:underline">
-                        Sign up
+                    Already have an account?{' '}
+                    <Link href="/login" className="text-green-600 hover:underline">
+                        Sign in
                     </Link>
                 </p>
             </div>

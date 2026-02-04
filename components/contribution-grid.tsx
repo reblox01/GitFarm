@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Save, Trash2, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ContributionDay {
     week: number;
@@ -122,8 +123,8 @@ export function ContributionGrid() {
                                             <div
                                                 key={`${week}-${day}`}
                                                 className={`w-3 h-3 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-green-400 ${cell?.selected
-                                                        ? 'bg-green-600 hover:bg-green-700'
-                                                        : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'
+                                                    ? 'bg-green-600 hover:bg-green-700'
+                                                    : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'
                                                     }`}
                                                 onMouseDown={() => handleMouseDown(week, day)}
                                                 onMouseEnter={() => handleMouseEnter(week, day)}
@@ -161,8 +162,9 @@ export function ContributionGrid() {
                         size="lg"
                         disabled={selectedCount === 0}
                         onClick={() => {
-                            // TODO: Implement commit job creation
-                            alert('Commit job creation coming soon!');
+                            toast.info('Commit job creation coming soon!', {
+                                description: `You selected ${selectedCount} days to commit`,
+                            });
                         }}
                     >
                         <Save className="mr-2 h-5 w-5" />

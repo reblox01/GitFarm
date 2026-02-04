@@ -6,25 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { changePassword } from '@/app/actions/user';
+import { toast } from 'sonner';
 
 export function PasswordForm() {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setLoading(true);
-        setError('');
-        setSuccess(false);
 
         const formData = new FormData(e.currentTarget);
         const result = await changePassword(formData);
 
         if (result?.error) {
-            setError(result.error);
+            toast.error('Failed to change password', {
+                description: result.error,
+            });
         } else {
-            setSuccess(true);
+            toast.success('Password updated successfully');
             e.currentTarget.reset();
         }
 
@@ -71,8 +70,6 @@ export function PasswordForm() {
                             minLength={8}
                         />
                     </div>
-                    {error && <p className="text-sm text-red-500">{error}</p>}
-                    {success && <p className="text-sm text-green-500">Password updated successfully</p>}
                     <Button type="submit" disabled={loading}>
                         {loading ? 'Updating...' : 'Update Password'}
                     </Button>

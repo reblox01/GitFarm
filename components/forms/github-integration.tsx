@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Github, CheckCircle2, XCircle } from 'lucide-react';
 import { initiateGitHubLink, disconnectGitHub } from '@/app/actions/github';
 import { prisma } from '@/lib/db';
+import { toast } from 'sonner';
 
 export function GitHubIntegration({ userId }: { userId: string }) {
     const [loading, setLoading] = useState(false);
@@ -47,6 +48,11 @@ export function GitHubIntegration({ userId }: { userId: string }) {
         const result = await disconnectGitHub();
         if (result?.success) {
             setConnected(false);
+            toast.success('GitHub account disconnected');
+        } else if (result?.error) {
+            toast.error('Failed to disconnect', {
+                description: result.error,
+            });
         }
         setLoading(false);
     }

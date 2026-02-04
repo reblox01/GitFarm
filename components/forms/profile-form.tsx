@@ -7,26 +7,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updateProfile } from '@/app/actions/user';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export function ProfileForm({ user }: { user: { name: string; email: string } }) {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
     const router = useRouter();
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setLoading(true);
-        setError('');
-        setSuccess(false);
 
         const formData = new FormData(e.currentTarget);
         const result = await updateProfile(formData);
 
         if (result?.error) {
-            setError(result.error);
+            toast.error('Failed to update profile', {
+                description: result.error,
+            });
         } else {
-            setSuccess(true);
+            toast.success('Profile updated successfully');
             router.refresh();
         }
 
@@ -62,8 +61,6 @@ export function ProfileForm({ user }: { user: { name: string; email: string } })
                             required
                         />
                     </div>
-                    {error && <p className="text-sm text-red-500">{error}</p>}
-                    {success && <p className="text-sm text-green-500">Profile updated successfully</p>}
                     <Button type="submit" disabled={loading}>
                         {loading ? 'Saving...' : 'Save Changes'}
                     </Button>

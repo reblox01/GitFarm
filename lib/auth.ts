@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 export const authConfig: NextAuthConfig = {
     trustHost: true,
     debug: process.env.NODE_ENV === 'development',
-    // Remove adapter - JWT sessions don't use database
+    adapter: PrismaAdapter(prisma),
     providers: [
         Credentials({
             name: 'credentials',
@@ -51,13 +51,19 @@ export const authConfig: NextAuthConfig = {
             clientSecret: process.env.GITHUB_CLIENT_SECRET!,
             authorization: {
                 params: {
-                    scope: 'read:user user:email',
+                    scope: 'repo user:email read:user',
                 },
             },
         }),
     ],
     callbacks: {
-        async jwt({ token, user }) {
+        async signIn({ user, account, profile }) {
+            console.log('SignIn Callback:', { user, account, provider: account?.provider });
+
+            // Allow all sign-ins
+            return true;
+        },
+        async jwt({ token, user, account }) {
             console.log('JWT Callback called');
             // Initial sign in
             if (user) {
@@ -65,6 +71,12 @@ export const authConfig: NextAuthConfig = {
                 token.id = user.id;
                 token.role = (user as any).role || 'USER';
             }
+
+            // Store account info if available
+            if (account) {
+                token.accessToken = account.access_token;
+            }
+
             return token;
         },
         async session({ session, token }) {
@@ -85,6 +97,12 @@ export const authConfig: NextAuthConfig = {
     session: {
         strategy: 'jwt',
     },
+    events: {
+        async linkAccount({ user, account, profile }) {
+            console.log('Account linked:', { userId: user.id, provider: account.provider });
+        },
+    },
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+

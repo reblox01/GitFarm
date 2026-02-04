@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, signIn } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 
@@ -15,28 +15,12 @@ export async function initiateGitHubLink() {
         redirect('/login');
     }
 
-    // Build GitHub OAuth URL with required scopes
-    const githubClientId = process.env.GITHUB_CLIENT_ID!;
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/callback/github`;
-
-    const scopes = [
-        'repo', // Full control of private repositories
-        'user:email', // Access user email addresses
-        'read:user', // Read user profile data
-    ].join(' ');
-
-    const state = Buffer.from(JSON.stringify({
-        userId: session.user.id,
-        action: 'link',
-    })).toString('base64');
-
-    const authUrl = new URL('https://github.com/login/oauth/authorize');
-    authUrl.searchParams.set('client_id', githubClientId);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
-    authUrl.searchParams.set('scope', scopes);
-    authUrl.searchParams.set('state', state);
-
-    redirect(authUrl.toString());
+    // Use NextAuth's signIn with GitHub provider
+    // This will handle the OAuth flow and redirect back
+    await signIn('github', {
+        redirectTo: '/dashboard/settings?tab=integrations',
+        redirect: true,
+    });
 }
 
 /**

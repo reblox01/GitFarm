@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { GitGraph, Trash2, Sparkles, Loader2, GitCommit, Eraser, Brush, PaintBucket, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { getRepoState, createCommitBatch, pushChanges, initializeRepository } from '@/app/actions/commits';
+import { getRepoState, createCommitBatch, pushChanges, initializeRepository, recordCommitJob } from '@/app/actions/commits';
 import { subDays } from 'date-fns';
-import { CommitProgressDialog, ProgressStep } from './commit-progress-dialog';
+import { CommitProgressDialog } from './commit-progress-dialog';
+import type { ProgressStep } from './commit-progress-dialog';
 
 interface ContributionDay {
     week: number;
@@ -192,7 +193,6 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
             // 1. Calculate Dates
             const today = new Date();
             const currentDayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
-            const commitsToCreate: { date: string; message: string; parentSha: string }[] = [];
 
             // We need to build the list first to know total count and iterate easily
             // Note: We need parentSha for each commit, which depends on the previous one.
@@ -286,10 +286,25 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
             // Done!
             setProgressStep('complete');
 
+            // Record successful job
+            await recordCommitJob({
+                repository: selectedRepo,
+                totalCommits: rawCommits.length,
+                status: 'COMPLETED'
+            });
+
         } catch (error: any) {
             console.error('Generation process failed:', error);
             setErrorMessage(error.message || 'An unknown error occurred');
             setProgressStep('error');
+
+            // Record failed job
+            await recordCommitJob({
+                repository: selectedRepo,
+                totalCommits: grid.filter(cell => cell.selected).length,
+                status: 'FAILED',
+                errorMessage: error.message || 'An unknown error occurred'
+            });
         }
     };
 

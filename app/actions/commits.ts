@@ -226,3 +226,32 @@ export async function initializeRepository(repository: string) {
         return { error: error.message };
     }
 }
+
+export async function recordCommitJob(data: {
+    repository: string;
+    totalCommits: number;
+    status: 'COMPLETED' | 'FAILED';
+    errorMessage?: string;
+}) {
+    const session = await auth();
+    if (!session?.user?.id) return { error: 'Unauthorized' };
+
+    try {
+        await prisma.commitJob.create({
+            data: {
+                userId: session.user.id,
+                status: data.status,
+                totalCommits: data.totalCommits,
+                completedCommits: data.status === 'COMPLETED' ? data.totalCommits : 0,
+                repositoryUrl: data.repository,
+                errorMessage: data.errorMessage,
+                pattern: {}, // Simplified for history
+                completedAt: data.status === 'COMPLETED' ? new Date() : null,
+            },
+        });
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}

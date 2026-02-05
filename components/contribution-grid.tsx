@@ -49,6 +49,7 @@ export function ContributionGrid() {
     const [progressStep, setProgressStep] = useState<ProgressStep>('idle');
     const [progress, setProgress] = useState({ current: 0, total: 0 });
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
+    const [isMinimized, setIsMinimized] = useState(false);
 
     useEffect(() => {
         async function fetchRepositories() {
@@ -118,6 +119,7 @@ export function ContributionGrid() {
 
         // Reset and Open Dialog
         setIsGenerating(true);
+        setIsMinimized(false);
         setProgressStep('init');
         setProgress({ current: 0, total: selectedCells.length });
         setErrorMessage(undefined);
@@ -269,6 +271,8 @@ export function ContributionGrid() {
                 onClose={handleCloseDialog}
                 actionLabel={isRepoEmpty ? "Initialize Repository" : undefined}
                 onAction={isRepoEmpty ? handleInitializeRepo : undefined}
+                isMinimized={isMinimized}
+                onMinimize={setIsMinimized}
             />
 
             {/* Show specific error action if applicable - actually we can put this INSIDE the dialog or show a toast action */}

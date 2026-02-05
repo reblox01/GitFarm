@@ -119,8 +119,20 @@ export function CommitProgressDialog({
         );
     }
 
+    const handleOpenChange = (open: boolean) => {
+        if (!open) {
+            // If the user clicks outside or drags down, we minimize instead of closing 
+            // EXCEPT if the task is actually finished or has an error (where close makes sense)
+            if (step === 'complete' || step === 'error') {
+                onClose();
+            } else {
+                onMinimize(true);
+            }
+        }
+    };
+
     return (
-        <Drawer open={isOpen && !isMinimized} onClose={onClose} dismissible={false}>
+        <Drawer open={isOpen && !isMinimized} onOpenChange={handleOpenChange}>
             <DrawerContent>
                 <div className="mx-auto w-full max-w-lg">
                     <DrawerHeader className="relative">
@@ -132,7 +144,7 @@ export function CommitProgressDialog({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-4 top-4"
+                            className="absolute right-4 top-4 rounded-full"
                             onClick={() => onMinimize(true)}
                         >
                             <Minimize2 className="h-4 w-4" />

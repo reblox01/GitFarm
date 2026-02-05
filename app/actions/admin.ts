@@ -3,55 +3,128 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
-import { Role } from '@prisma/client';
 
-export async function updateUserRole(userId: string, newRole: Role) {
+async function checkAdmin() {
     const session = await auth();
-
-    // Check if requester is ADMIN
     if (!session?.user?.id || (session.user as any).role !== 'ADMIN') {
-        return { error: 'Unauthorized' };
+        throw new Error('Unauthorized');
+    }
+}
+
+export async function getPlanLimits() {
+    await checkAdmin();
+
+    const plans = await prisma.plan.findMany({
+        include: {
+            features: {
+                include: {
+                    feature: true
+                }
+            }
+        },
+        orderBy: { price: 'asc' }
+    });
+
+    const allFeatures = await prisma.feature.findMany();
+
+    return { plans, allFeatures };
+}
+
+export async function updatePlanLimit(planId: string, featureId: string, limitValue: number | null) {
+    await checkAdmin();
+
+    await prisma.planFeature.upsert({
+        where: {
+            planId_featureId: {
+                planId,
+                featureId
+            }
+        },
+        update: {
+            limitValue
+        },
+        create: {
+            planId,
+            featureId,
+            limitValue
+        }
+    });
+
+    revalidatePath('/admin/plans');
+    return { success: true };
+}
+
+export async function togglePlanFeature(planId: string, featureId: string, enabled: boolean) {
+    await checkAdmin();
+
+    if (enabled) {
+        await prisma.planFeature.upsert({
+            where: {
+                planId_featureId: {
+                    planId,
+                    featureId
+                }
+            },
+            update: {},
+            create: {
+                planId,
+                featureId,
+                limitValue: null // Default to unlimited if just enabling
+            }
+        });
+    } else {
+        await prisma.planFeature.deleteMany({
+            where: {
+                planId,
+                featureId
+            }
+        });
     }
 
-    try {
-        // Prevent modifying own role to avoid locking oneself out
-        if (userId === session.user.id) {
-            return { error: 'Cannot modify your own role' };
-        }
+    revalidatePath('/admin/plans');
+    return { success: true };
+}
 
+export async function createFeature(name: string, key: string, description?: string) {
+    await checkAdmin();
+
+    const feature = await prisma.feature.create({
+        data: {
+            name,
+            key,
+            description
+        }
+    });
+
+    revalidatePath('/admin/plans');
+    return { success: true, feature };
+}
+
+export async function updateUserRole(userId: string, role: 'USER' | 'ADMIN') {
+    await checkAdmin();
+
+    try {
         await prisma.user.update({
             where: { id: userId },
-            data: { role: newRole },
+            data: { role }
         });
-
         revalidatePath('/admin/users');
         return { success: true };
-    } catch (error) {
-        console.error('Update role error:', error);
-        return { error: 'Failed to update role' };
+    } catch (error: any) {
+        return { error: error.message };
     }
 }
 
 export async function deleteUser(userId: string) {
-    const session = await auth();
-
-    if (!session?.user?.id || (session.user as any).role !== 'ADMIN') {
-        return { error: 'Unauthorized' };
-    }
+    await checkAdmin();
 
     try {
-        if (userId === session.user.id) {
-            return { error: 'Cannot delete your own account' };
-        }
-
         await prisma.user.delete({
-            where: { id: userId },
+            where: { id: userId }
         });
-
         revalidatePath('/admin/users');
         return { success: true };
-    } catch (error) {
-        console.error('Delete user error:', error);
-        return { error: 'Failed to delete user' };
+    } catch (error: any) {
+        return { error: error.message };
     }
 }

@@ -128,3 +128,18 @@ export async function deleteUser(userId: string) {
         return { error: error.message };
     }
 }
+
+export async function updateUserCredits(userId: string, credits: number) {
+    await checkAdmin();
+
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { credits }
+        });
+        revalidatePath('/admin/users');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}

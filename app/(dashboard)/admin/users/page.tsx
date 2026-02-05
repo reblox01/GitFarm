@@ -47,7 +47,9 @@ export default async function AdminUsersPage() {
                             <TableHead>User</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead>Credits</TableHead>
                             <TableHead>Joined</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -59,28 +61,35 @@ export default async function AdminUsersPage() {
                                         <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <p className="font-medium">{user.name || 'Unnamed User'}</p>
-                                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                                        <p className="font-medium text-sm">{user.name || 'Unnamed User'}</p>
+                                        <p className="text-[10px] text-muted-foreground">{user.email}</p>
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
+                                    <Badge variant={user.role === 'ADMIN' ? 'default' : 'outline'} className="text-[10px] uppercase font-bold tracking-wider">
                                         {user.role}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant={user.subscription?.status === 'ACTIVE' ? 'outline' : 'secondary'}>
+                                    <Badge variant={user.subscription?.status === 'ACTIVE' ? 'outline' : 'secondary'} className="text-[10px] uppercase font-bold tracking-wider">
                                         {user.subscription?.status || 'FREE'}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-muted-foreground">
+                                <TableCell>
+                                    <div className="flex items-center gap-1.5 font-medium text-sm">
+                                        <span className="text-green-600">🪙</span>
+                                        {user.credits?.toLocaleString() || '0'}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                                     {formatDistanceToNow(user.createdAt, { addSuffix: true })}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="text-right">
                                     <UserActions
                                         userId={user.id}
                                         currentRole={user.role}
                                         userName={user.name || 'User'}
+                                        currentCredits={user.credits || 0}
                                     />
                                 </TableCell>
                             </TableRow>

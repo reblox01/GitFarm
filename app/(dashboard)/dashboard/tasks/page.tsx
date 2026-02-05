@@ -54,7 +54,7 @@ export default async function TasksPage() {
                 </Card>
             ) : (
                 <div className="grid gap-4">
-                    {tasks.map((task) => (
+                    {tasks.map((task: any) => (
                         <TaskItem key={task.id} task={task} />
                     ))}
                 </div>

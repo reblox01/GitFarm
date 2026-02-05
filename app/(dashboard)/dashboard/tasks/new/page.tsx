@@ -155,7 +155,7 @@ export default function NewTaskPage() {
                                         <SelectValue placeholder="Select a repository" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {repositories.map((repo) => (
+                                        {repositories.map((repo: any) => (
                                             <SelectItem key={repo.id} value={repo.fullName}>
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-medium">{repo.fullName}</span>

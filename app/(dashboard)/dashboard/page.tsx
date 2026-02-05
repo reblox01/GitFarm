@@ -66,7 +66,7 @@ export default async function DashboardPage() {
 
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-3">
-                {stats.map((stat) => {
+                {stats.map((stat: any) => {
                     const Icon = stat.icon;
                     return (
                         <Card key={stat.title}>
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {user?.commitJobs.map((job) => (
+                            {user?.commitJobs.map((job: any) => (
                                 <div key={job.id} className="flex items-center justify-between border-b pb-4 last:border-0">
                                     <div>
                                         <p className="font-medium">

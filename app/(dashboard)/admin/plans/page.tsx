@@ -67,7 +67,7 @@ export default async function AdminPlansPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                plans.map((plan) => (
+                                plans.map((plan: any) => (
                                     <TableRow key={plan.id}>
                                         <TableCell className="font-medium">
                                             {plan.name}

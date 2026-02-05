@@ -438,26 +438,19 @@ export function ContributionGrid() {
                 </Card>
             </div>
 
-            <div className="flex justify-end">
-                <Button
-                    size="lg"
-                    className="px-8 shadow-lg"
-                    disabled={selectedCount === 0 || !selectedRepo || isGenerating}
-                    onClick={handleGenerateCommits}
-                >
-                    {isGenerating ? (
-                        <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Processing...
-                        </>
-                    ) : (
-                        <>
-                            <GitGraph className="mr-2 h-5 w-5" />
-                            Generate {selectedCount} Commits
-                        </>
-                    )}
-                </Button>
-            </div>
+            {!isGenerating && (
+                <div className="flex justify-end animate-in fade-in duration-500">
+                    <Button
+                        size="lg"
+                        className="px-8 shadow-lg"
+                        disabled={selectedCount === 0 || !selectedRepo}
+                        onClick={handleGenerateCommits}
+                    >
+                        <GitGraph className="mr-2 h-5 w-5" />
+                        Generate {selectedCount} Commits
+                    </Button>
+                </div>
+            )}
         </div >
     );
 }

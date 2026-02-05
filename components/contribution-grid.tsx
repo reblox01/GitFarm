@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { GitGraph, Trash2, Sparkles, Loader2, GitCommit } from 'lucide-react';
+import { GitGraph, Trash2, Sparkles, Loader2, GitCommit, Eraser, Brush, PaintBucket } from 'lucide-react';
 import { toast } from 'sonner';
 import { getRepoState, createCommitBatch, pushChanges, initializeRepository } from '@/app/actions/commits';
 import { subDays } from 'date-fns';
@@ -303,102 +303,15 @@ export function ContributionGrid() {
                 onMinimize={setIsMinimized}
             />
 
-            {/* Show specific error action if applicable - actually we can put this INSIDE the dialog or show a toast action */}
-            {/* But since we use a custom dialog, maybe we should pass an 'action' prop to it? */}
-            {/* Or render another dialog? */}
-            {/* Let's simplify: If errorMessage contains "empty", we can show a button in the main UI or modify the dialog. */}
-            {/* I will modify CommitProgressDialog to accept an optional 'action' button. */}
-
-
             <Card>
                 <CardHeader>
-                    <CardTitle>Draw Mode</CardTitle>
+                    <CardTitle>Target Repository</CardTitle>
                     <CardDescription>
-                        Click to toggle individual days, or drag to paint multiple days
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-4">
-                    <Button
-                        variant={drawMode === 'fill' ? 'default' : 'outline'}
-                        onClick={() => setDrawMode('fill')}
-                    >
-                        Fill Mode
-                    </Button>
-                    <Button
-                        variant={drawMode === 'erase' ? 'default' : 'outline'}
-                        onClick={() => setDrawMode('erase')}
-                    >
-                        Erase Mode
-                    </Button>
-                    <Separator orientation="vertical" className="h-10 hidden sm:block" />
-                    <Button variant="outline" onClick={generateRandomPattern}>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Random
-                    </Button>
-                    <Button variant="outline" onClick={fillAll}>
-                        Fill All
-                    </Button>
-                    <Button variant="outline" onClick={clearGrid}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Clear
-                    </Button>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Contribution Calendar</CardTitle>
-                    <CardDescription>
-                        {selectedCount} days selected (~{selectedCount} commits)
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto pb-4">
-                        <div className="inline-flex gap-1">
-                            {Array.from({ length: 52 }, (_, week) => (
-                                <div key={week} className="flex flex-col gap-1">
-                                    {Array.from({ length: 7 }, (_, day) => {
-                                        const cell = grid.find((c) => c.week === week && c.day === day);
-                                        return (
-                                            <div
-                                                key={`${week}-${day}`}
-                                                className={`w-3 h-3 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-green-400 ${cell?.selected
-                                                    ? 'bg-green-600 hover:bg-green-700'
-                                                    : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'
-                                                    }`}
-                                                onMouseDown={() => handleMouseDown(week, day)}
-                                                onMouseEnter={() => handleMouseEnter(week, day)}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
-                        <span>Less</span>
-                        <div className="flex gap-1">
-                            <div className="w-3 h-3 rounded-sm bg-slate-200 dark:bg-slate-800" />
-                            <div className="w-3 h-3 rounded-sm bg-green-200" />
-                            <div className="w-3 h-3 rounded-sm bg-green-400" />
-                            <div className="w-3 h-3 rounded-sm bg-green-600" />
-                        </div>
-                        <span>More</span>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Generate Commits</CardTitle>
-                    <CardDescription>
-                        Create commit jobs based on your selected pattern
+                        Select the repository where your contribution graph will be pushed
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid gap-2">
-                        <Label>Target Repository</Label>
+                    <div className="grid gap-2 max-w-md">
                         {loadingRepos ? (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 border rounded-md">
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -424,42 +337,127 @@ export function ContributionGrid() {
                             </Select>
                         )}
                         {repoStats && !loadingStats && (
-                            <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                                <GitCommit className="h-3 w-3" />
+                            <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium ml-1">
+                                <GitCommit className="h-3.5 w-3.5" />
                                 <span>{repoStats.commitCount.toLocaleString()} total commits</span>
                             </div>
                         )}
                         {loadingStats && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                <span>Fetching stats...</span>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse ml-1">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <span>Updating stats...</span>
                             </div>
                         )}
-                        <p className="text-xs text-muted-foreground">
-                            Commits will be backdated to match the calendar pattern selected above.
-                        </p>
                     </div>
-
-                    <Button
-                        className="w-full"
-                        size="lg"
-                        disabled={selectedCount === 0 || !selectedRepo || isGenerating}
-                        onClick={handleGenerateCommits}
-                    >
-                        {isGenerating ? (
-                            <>
-                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <GitGraph className="mr-2 h-5 w-5" />
-                                Generate {selectedCount} Commits
-                            </>
-                        )}
-                    </Button>
                 </CardContent>
             </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Card className="md:col-span-1">
+                    <CardHeader>
+                        <CardTitle>Draw Mode</CardTitle>
+                        <CardDescription>
+                            Paint your pattern
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2">
+                        <Button
+                            variant={drawMode === 'fill' ? 'default' : 'outline'}
+                            onClick={() => setDrawMode('fill')}
+                            className="justify-start shadow-sm"
+                        >
+                            <Brush className="text-green-600 mr-2 h-4 w-4" />
+                            Fill Mode
+                        </Button>
+                        <Button
+                            variant={drawMode === 'erase' ? 'default' : 'outline'}
+                            onClick={() => setDrawMode('erase')}
+                            className="justify-start shadow-sm"
+                        >
+                            <Eraser className="text-red-600 mr-2 h-4 w-4" />
+                            Erase Mode
+                        </Button>
+                        <Separator className="my-2" />
+                        <Button variant="ghost" size="sm" onClick={generateRandomPattern} className="justify-start">
+                            <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
+                            Random Pattern
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={fillAll} className="justify-start">
+                            <PaintBucket className="mr-2 h-4 w-4 text-green-600" />
+                            Fill Everything
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={clearGrid} className="justify-start text-destructive hover:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                            Clear Grid
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card className="md:col-span-3">
+                    <CardHeader>
+                        <CardTitle>Contribution Calendar</CardTitle>
+                        <CardDescription>
+                            {selectedCount} days selected (~{selectedCount} commits)
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto pb-4">
+                            <div className="inline-flex gap-1">
+                                {Array.from({ length: 52 }, (_, week) => (
+                                    <div key={week} className="flex flex-col gap-1">
+                                        {Array.from({ length: 7 }, (_, day) => {
+                                            const cell = grid.find((c) => c.week === week && c.day === day);
+                                            return (
+                                                <div
+                                                    key={`${week}-${day}`}
+                                                    className={`w-3 h-3 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-green-400 ${cell?.selected
+                                                        ? 'bg-green-600 hover:bg-green-700'
+                                                        : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'
+                                                        }`}
+                                                    onMouseDown={() => handleMouseDown(week, day)}
+                                                    onMouseEnter={() => handleMouseEnter(week, day)}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
+                            <span>Less</span>
+                            <div className="flex gap-1">
+                                <div className="w-3 h-3 rounded-sm bg-slate-200 dark:bg-slate-800" />
+                                <div className="w-3 h-3 rounded-sm bg-green-200" />
+                                <div className="w-3 h-3 rounded-sm bg-green-400" />
+                                <div className="w-3 h-3 rounded-sm bg-green-600" />
+                            </div>
+                            <span>More</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="flex justify-end">
+                <Button
+                    size="lg"
+                    className="px-8 shadow-lg"
+                    disabled={selectedCount === 0 || !selectedRepo || isGenerating}
+                    onClick={handleGenerateCommits}
+                >
+                    {isGenerating ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Processing...
+                        </>
+                    ) : (
+                        <>
+                            <GitGraph className="mr-2 h-5 w-5" />
+                            Generate {selectedCount} Commits
+                        </>
+                    )}
+                </Button>
+            </div>
         </div >
     );
 }

@@ -13,7 +13,6 @@ import {
 import { MoreHorizontal, Shield, ShieldAlert, Trash2, Loader2, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateUserRole, deleteUser, updateUserCredits } from '@/app/actions/admin';
-import { Role } from '@prisma/client';
 import {
     Dialog,
     DialogContent,
@@ -27,7 +26,7 @@ import { Label } from "@/components/ui/label";
 
 interface UserActionsProps {
     userId: string;
-    currentRole: Role;
+    currentRole: 'USER' | 'ADMIN';
     userName: string;
     currentCredits: number;
 }
@@ -37,7 +36,7 @@ export function UserActions({ userId, currentRole, userName, currentCredits }: U
     const [showCreditsDialog, setShowCreditsDialog] = useState(false);
     const [credits, setCredits] = useState(currentCredits.toString());
 
-    const handleRoleChange = async (newRole: Role) => {
+    const handleRoleChange = async (newRole: 'USER' | 'ADMIN') => {
         setLoading(true);
         try {
             const result = await updateUserRole(userId, newRole);

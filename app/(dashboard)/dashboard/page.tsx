@@ -47,7 +47,7 @@ export default async function DashboardPage() {
         },
         {
             title: 'Total Commits',
-            value: user?.commitJobs.reduce((acc, job) => acc + job.completedCommits, 0) || 0,
+            value: (user?.commitJobs as any[] || []).reduce((acc: number, job: any) => acc + job.completedCommits, 0),
             icon: GitCommit,
             description: 'All time',
         },

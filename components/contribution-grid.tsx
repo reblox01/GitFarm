@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { GitGraph, Trash2, Sparkles, Loader2, GitCommit, Eraser, Brush, PaintBucket } from 'lucide-react';
+import { GitGraph, Trash2, Sparkles, Loader2, GitCommit, Eraser, Brush, PaintBucket, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { getRepoState, createCommitBatch, pushChanges, initializeRepository } from '@/app/actions/commits';
 import { subDays } from 'date-fns';
 import { CommitProgressDialog, ProgressStep } from './commit-progress-dialog';
@@ -25,7 +26,8 @@ interface Repository {
     private: boolean;
 }
 
-export function ContributionGrid() {
+export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: number }) {
+    const [credits, setCredits] = useState(initialCredits);
     const [grid, setGrid] = useState<ContributionDay[]>(() => {
         const days = [];
         for (let week = 0; week < 52; week++) {
@@ -97,14 +99,24 @@ export function ContributionGrid() {
         fetchRepoStats();
     }, [selectedRepo]);
 
+    const selectedCount = grid.filter((cell) => cell.selected).length;
+    const isOverLimit = selectedCount >= credits && drawMode === 'fill';
+
     const toggleCell = (week: number, day: number) => {
-        setGrid((prev) =>
-            prev.map((cell) =>
+        setGrid((prev) => {
+            const isCurrentlySelected = prev.find(c => c.week === week && c.day === day)?.selected;
+
+            // If trying to select a new cell but already at limit
+            if (!isCurrentlySelected && drawMode === 'fill' && selectedCount >= credits) {
+                return prev;
+            }
+
+            return prev.map((cell) =>
                 cell.week === week && cell.day === day
-                    ? { ...cell, selected: drawMode === 'fill' ? true : false }
+                    ? { ...cell, selected: drawMode === 'fill' }
                     : cell
-            )
-        );
+            );
+        });
     };
 
     const handleMouseDown = (week: number, day: number) => {
@@ -127,13 +139,37 @@ export function ContributionGrid() {
     };
 
     const fillAll = () => {
-        setGrid((prev) => prev.map((cell) => ({ ...cell, selected: true })));
+        // Fill up to credits limit
+        setGrid((prev) => {
+            let filled = 0;
+            return prev.map((cell) => {
+                if (filled < credits) {
+                    filled++;
+                    return { ...cell, selected: true };
+                }
+                return { ...cell, selected: false };
+            });
+        });
+
+        if (credits < grid.length) {
+            toast.warning(`Limited to ${credits} commits (your current credit balance)`);
+        }
     };
 
     const generateRandomPattern = () => {
-        setGrid((prev) =>
-            prev.map((cell) => ({ ...cell, selected: Math.random() > 0.7 }))
-        );
+        setGrid((prev) => {
+            let filled = 0;
+            // First clear
+            const cleared = prev.map(c => ({ ...c, selected: false }));
+            // Then random fill up to limit
+            return cleared.map((cell) => {
+                if (filled < credits && Math.random() > 0.7) {
+                    filled++;
+                    return { ...cell, selected: true };
+                }
+                return cell;
+            });
+        });
     };
 
     const handleGenerateCommits = async () => {
@@ -286,7 +322,6 @@ export function ContributionGrid() {
         }
     };
 
-    const selectedCount = grid.filter((cell) => cell.selected).length;
     const isRepoEmpty = progressStep === 'needs_init';
 
     return (
@@ -352,6 +387,23 @@ export function ContributionGrid() {
                 </CardContent>
             </Card>
 
+            {isOverLimit && (
+                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                            Credit Limit Reached
+                        </p>
+                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                            You have selected {selectedCount} days, which is your current credit limit.
+                            <Link href="/dashboard/plans" className="ml-1 font-bold underline hover:text-amber-900 dark:hover:text-amber-100">
+                                Get more credits
+                            </Link> to design larger patterns.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card className="md:col-span-1">
                     <CardHeader>
@@ -364,9 +416,9 @@ export function ContributionGrid() {
                         <Button
                             variant={drawMode === 'fill' ? 'default' : 'outline'}
                             onClick={() => setDrawMode('fill')}
-                            className="justify-start shadow-sm"
+                            className={`justify-start shadow-sm ${drawMode === 'fill' ? 'bg-green-600 hover:bg-green-700' : ''}`}
                         >
-                            <Brush className="text-green-600 mr-2 h-4 w-4" />
+                            <Brush className={`mr-2 h-4 w-4 ${drawMode === 'fill' ? 'text-white' : 'text-green-600'}`} />
                             Fill Mode
                         </Button>
                         <Button
@@ -374,15 +426,15 @@ export function ContributionGrid() {
                             onClick={() => setDrawMode('erase')}
                             className="justify-start shadow-sm"
                         >
-                            <Eraser className="text-red-600 mr-2 h-4 w-4" />
+                            <Eraser className={`mr-2 h-4 w-4 ${drawMode === 'erase' ? 'text-white' : 'text-red-600'}`} />
                             Erase Mode
                         </Button>
                         <Separator className="my-2" />
-                        <Button variant="ghost" size="sm" onClick={generateRandomPattern} className="justify-start">
+                        <Button variant="ghost" size="sm" onClick={generateRandomPattern} className="justify-start shadow-sm bg-muted/50">
                             <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
                             Random Pattern
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={fillAll} className="justify-start">
+                        <Button variant="ghost" size="sm" onClick={fillAll} className="justify-start shadow-sm bg-muted/50">
                             <PaintBucket className="mr-2 h-4 w-4 text-green-600" />
                             Fill Everything
                         </Button>
@@ -396,12 +448,15 @@ export function ContributionGrid() {
                 <Card className="md:col-span-3">
                     <CardHeader>
                         <CardTitle>Contribution Calendar</CardTitle>
-                        <CardDescription>
-                            {selectedCount} days selected (~{selectedCount} commits)
+                        <CardDescription className="flex items-center justify-between">
+                            <span>{selectedCount} days selected (~{selectedCount} commits)</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isOverLimit ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'}`}>
+                                Credits: {selectedCount} / {credits}
+                            </span>
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto pb-4">
+                        <div className="overflow-x-auto pb-4 custom-scrollbar">
                             <div className="inline-flex gap-1">
                                 {Array.from({ length: 52 }, (_, week) => (
                                     <div key={week} className="flex flex-col gap-1">
@@ -413,7 +468,7 @@ export function ContributionGrid() {
                                                     className={`w-3 h-3 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-green-400 ${cell?.selected
                                                         ? 'bg-green-600 hover:bg-green-700'
                                                         : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'
-                                                        }`}
+                                                        } ${isOverLimit && !cell?.selected ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                     onMouseDown={() => handleMouseDown(week, day)}
                                                     onMouseEnter={() => handleMouseEnter(week, day)}
                                                 />
@@ -442,15 +497,15 @@ export function ContributionGrid() {
                 <div className="flex justify-end animate-in fade-in duration-500">
                     <Button
                         size="lg"
-                        className="px-8 shadow-lg"
+                        className={`px-8 shadow-lg transition-all ${isOverLimit ? 'bg-green-600/50 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
                         disabled={selectedCount === 0 || !selectedRepo}
                         onClick={handleGenerateCommits}
                     >
                         <GitGraph className="mr-2 h-5 w-5" />
-                        Generate {selectedCount} Commits
+                        {isOverLimit ? `At Credit Limit (${selectedCount})` : `Generate ${selectedCount} Commits`}
                     </Button>
                 </div>
             )}
-        </div >
+        </div>
     );
 }

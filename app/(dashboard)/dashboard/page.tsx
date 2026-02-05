@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Calendar, GitCommit, Sparkles, TrendingUp, Coins } from 'lucide-react';
 import Link from 'next/link';
+import { CheckoutStatus } from '@/components/checkout-status';
+import { Suspense } from 'react';
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -64,6 +66,9 @@ export default async function DashboardPage() {
 
     return (
         <div className="space-y-8">
+            <Suspense>
+                <CheckoutStatus />
+            </Suspense>
             <div>
                 <h1 className="text-3xl font-bold">Welcome back, {session?.user.name}! 👋</h1>
                 <p className="text-muted-foreground mt-2">

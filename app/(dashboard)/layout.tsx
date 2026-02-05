@@ -28,10 +28,57 @@ export default async function DashboardLayout({
         redirect('/login');
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { credits: true }
+        select: {
+            credits: true,
+            subscription: {
+                select: {
+                    plan: {
+                        select: { name: true }
+                    }
+                }
+            }
+        }
     });
+
+    if (!user?.subscription) {
+        const defaultPlan = await prisma.plan.findFirst({
+            where: { isDefault: true }
+        });
+
+        if (defaultPlan) {
+            await prisma.userSubscription.create({
+                data: {
+                    userId: session.user.id,
+                    planId: defaultPlan.id,
+                    status: 'ACTIVE',
+                    provider: 'STRIPE',
+                }
+            });
+
+            if (user?.credits === 0) {
+                await prisma.user.update({
+                    where: { id: session.user.id },
+                    data: { credits: defaultPlan.credits }
+                });
+            }
+
+            user = await prisma.user.findUnique({
+                where: { id: session.user.id },
+                select: {
+                    credits: true,
+                    subscription: {
+                        select: {
+                            plan: {
+                                select: { name: true }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
 
     return (
         <SidebarProvider>
@@ -39,6 +86,7 @@ export default async function DashboardLayout({
                 user={session.user}
                 role={(session.user as any).role}
                 credits={user?.credits || 0}
+                planName={user?.subscription?.plan?.name || 'Free'}
             />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">

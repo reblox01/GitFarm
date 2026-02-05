@@ -16,7 +16,7 @@ export async function handleCredentialsSignIn(formData: FormData) {
     const password = formData.get('password') as string;
 
     if (!email || !password) {
-        redirect('/login?error=missing-credentials');
+        return { error: 'Missing credentials' };
     }
 
     try {
@@ -25,15 +25,13 @@ export async function handleCredentialsSignIn(formData: FormData) {
             password,
             redirect: false,
         });
+        return { success: true };
     } catch (error) {
         if (error instanceof AuthError) {
-            redirect('/login?error=invalid-credentials');
+            return { error: 'Invalid credentials' };
         }
-        throw error;
+        return { error: 'An unexpected error occurred' };
     }
-
-    // Success - redirect to dashboard
-    redirect('/dashboard');
 }
 
 export async function handleRegister(formData: FormData) {
@@ -42,7 +40,7 @@ export async function handleRegister(formData: FormData) {
     const password = formData.get('password') as string;
 
     if (!email || !password || !name) {
-        redirect('/register?error=missing-fields');
+        return { error: 'Missing required fields' };
     }
 
     try {
@@ -52,20 +50,38 @@ export async function handleRegister(formData: FormData) {
         });
 
         if (existingUser) {
-            redirect('/register?error=user-exists');
+            return { error: 'User already exists' };
         }
+
+        // Get the default plan if it exists
+        const defaultPlan = await prisma.plan.findFirst({
+            where: { isDefault: true }
+        });
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user
-        await prisma.user.create({
+        // Create user with default credits
+        const user = await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
+                credits: defaultPlan?.credits || 0,
             },
         });
+
+        // Create subscription if default plan exists
+        if (defaultPlan) {
+            await prisma.userSubscription.create({
+                data: {
+                    userId: user.id,
+                    planId: defaultPlan.id,
+                    status: 'ACTIVE',
+                    provider: 'STRIPE', // Local default
+                }
+            });
+        }
 
         // Auto sign in after registration
         await signIn('credentials', {
@@ -73,13 +89,10 @@ export async function handleRegister(formData: FormData) {
             password,
             redirect: false,
         });
-    } catch (error) {
-        if (error instanceof AuthError) {
-            redirect('/register?error=registration-failed');
-        }
-        throw error;
-    }
 
-    // Success - redirect to dashboard
-    redirect('/dashboard');
+        return { success: true };
+    } catch (error) {
+        console.error('Registration error:', error);
+        return { error: 'Registration failed. Please try again.' };
+    }
 }

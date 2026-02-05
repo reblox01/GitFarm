@@ -20,23 +20,25 @@ export function RegisterForm() {
         const formData = new FormData(e.currentTarget);
 
         try {
-            await handleRegister(formData);
-            toast.success('Account created successfully!', {
-                description: 'You are now signed in',
-            });
-            router.push('/dashboard');
-        } catch (error: any) {
-            const errorMessage = error?.message || '';
+            const result = await handleRegister(formData);
 
-            if (errorMessage.includes('exists')) {
-                toast.error('Registration failed', {
-                    description: 'An account with this email already exists',
+            if (result?.success) {
+                toast.success('Account created successfully!', {
+                    description: 'You are now signed in',
                 });
-            } else {
+                router.push('/dashboard');
+                return;
+            }
+
+            if (result?.error) {
                 toast.error('Registration failed', {
-                    description: 'Please try again or contact support',
+                    description: result.error,
                 });
             }
+        } catch (error: any) {
+            toast.error('Registration error', {
+                description: 'An unexpected error occurred. Please try again.',
+            });
         } finally {
             setLoading(false);
         }

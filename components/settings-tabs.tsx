@@ -91,7 +91,7 @@ export function SettingsTabs({ user }: SettingsTabsProps) {
                                 </div>
                             </div>
                             <Button size="sm" className="bg-green-600 hover:bg-green-700" asChild>
-                                <a href="/dashboard/settings?tab=billing">
+                                <a href="/dashboard/plans">
                                     <ArrowUpCircle className="mr-2 h-4 w-4" />
                                     Get More
                                 </a>

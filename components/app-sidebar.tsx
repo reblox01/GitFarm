@@ -99,7 +99,7 @@ const data = {
     ],
 }
 
-export function AppSidebar({ user, role, credits, ...props }: React.ComponentProps<typeof Sidebar> & { user: any, role?: string, credits?: number }) {
+export function AppSidebar({ user, role, credits, planName, ...props }: React.ComponentProps<typeof Sidebar> & { user: any, role?: string, credits?: number, planName?: string }) {
     const pathname = usePathname();
     const isAdmin = role === 'ADMIN';
 
@@ -119,7 +119,7 @@ export function AppSidebar({ user, role, credits, ...props }: React.ComponentPro
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">GitFarm</span>
-                                    <span className="truncate text-xs">Pro</span>
+                                    <span className="truncate text-xs">{planName || 'Free'}</span>
                                 </div>
                             </a>
                         </SidebarMenuButton>
@@ -166,7 +166,7 @@ export function AppSidebar({ user, role, credits, ...props }: React.ComponentPro
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton size="lg" className="bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-500 border border-green-500/20 group" asChild>
-                                <a href="/dashboard/settings?tab=billing">
+                                <a href="/dashboard/plans">
                                     <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-green-500 text-white shadow-sm group-hover:scale-110 transition-transform">
                                         <Coins className="size-4" />
                                     </div>

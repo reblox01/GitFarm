@@ -82,9 +82,11 @@ export function NavUser({
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <Sparkles />
-                                Upgrade to Pro
+                            <DropdownMenuItem asChild>
+                                <a href="/dashboard/plans" className="flex items-center gap-2 w-full">
+                                    <Sparkles className="size-4" />
+                                    Upgrade to Pro
+                                </a>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
@@ -93,9 +95,11 @@ export function NavUser({
                                 <BadgeCheck />
                                 Account
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <CreditCard />
-                                Billing
+                            <DropdownMenuItem asChild>
+                                <a href="/dashboard/plans" className="flex items-center gap-2 w-full">
+                                    <CreditCard className="size-4" />
+                                    Billing
+                                </a>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <Bell />

@@ -170,12 +170,12 @@ export function PlanDialog({ trigger, plan }: PlanDialogProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="stripeId">Stripe Product ID (Optional)</Label>
+                        <Label htmlFor="stripeId">Stripe Product or Price ID (Optional)</Label>
                         <Input
                             id="stripeId"
                             value={stripeId}
                             onChange={(e) => setStripeId(e.target.value)}
-                            placeholder="prod_..."
+                            placeholder="prod_... or price_..."
                         />
                     </div>
                     <div className="flex items-center space-x-2 pt-2">

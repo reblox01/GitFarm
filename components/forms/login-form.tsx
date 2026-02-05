@@ -22,16 +22,22 @@ export function LoginForm() {
         const formData = new FormData(e.currentTarget);
 
         try {
-            await handleCredentialsSignIn(formData);
-            toast.success('Welcome back!');
-            router.push('/dashboard');
+            const result = await handleCredentialsSignIn(formData);
+
+            if (result?.success) {
+                toast.success('Welcome back!');
+                router.push('/dashboard');
+                return;
+            }
+
+            if (result?.error) {
+                toast.error('Login failed', {
+                    description: result.error,
+                });
+            }
         } catch (error: any) {
-            // Extract error message from URL if redirected with error
-            const errorMessage = error?.message || 'Invalid credentials';
-            toast.error('Login failed', {
-                description: errorMessage.includes('invalid')
-                    ? 'Email or password is incorrect'
-                    : 'Please check your credentials and try again',
+            toast.error('Login error', {
+                description: 'An unexpected error occurred. Please try again.',
             });
         } finally {
             setLoading(false);

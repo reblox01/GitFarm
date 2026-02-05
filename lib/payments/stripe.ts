@@ -31,6 +31,24 @@ export class StripeProvider {
         return await stripe.subscriptions.cancel(subscriptionId);
     }
 
+    async createCheckoutSession(params: {
+        customerId: string;
+        priceId: string;
+        mode: 'subscription' | 'payment';
+        successUrl: string;
+        cancelUrl: string;
+        metadata?: Record<string, string>;
+    }) {
+        return await stripe.checkout.sessions.create({
+            customer: params.customerId,
+            line_items: [{ price: params.priceId, quantity: 1 }],
+            mode: params.mode,
+            success_url: params.successUrl,
+            cancel_url: params.cancelUrl,
+            metadata: params.metadata,
+        });
+    }
+
     async constructWebhookEvent(body: string, signature: string) {
         const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
         if (!webhookSecret) {

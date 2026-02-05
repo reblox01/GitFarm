@@ -1,6 +1,20 @@
 import { ContributionGrid } from '@/components/contribution-grid';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { redirect } from 'next/navigation';
 
-export default function EditorPage() {
+export default async function EditorPage() {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+        redirect('/login');
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { credits: true }
+    });
+
     return (
         <div className="space-y-6">
             <div>
@@ -10,7 +24,7 @@ export default function EditorPage() {
                 </p>
             </div>
 
-            <ContributionGrid />
+            <ContributionGrid initialCredits={user?.credits || 0} />
         </div>
     );
 }

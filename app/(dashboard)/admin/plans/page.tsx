@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Settings2 } from 'lucide-react';
+import { Plus, Settings2, Pencil } from 'lucide-react';
 import { PlanDialog } from '@/components/admin/plan-dialog';
 import { PlanLimitsManager } from '@/components/admin/plan-limits-manager';
 
@@ -102,7 +102,15 @@ export default async function AdminPlansPage() {
                                                 <Badge variant="outline">Active</Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm">Edit</Button>
+                                                <PlanDialog
+                                                    plan={plan}
+                                                    trigger={
+                                                        <Button variant="ghost" size="sm">
+                                                            <Pencil className="mr-2 h-4 w-4" />
+                                                            Edit
+                                                        </Button>
+                                                    }
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))

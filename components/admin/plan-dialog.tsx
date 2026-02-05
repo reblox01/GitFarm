@@ -15,20 +15,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { createPlan } from '@/app/actions/plans';
-import { Loader2, Plus } from 'lucide-react';
+import { createPlan, updatePlan } from '@/app/actions/plans';
+import { Loader2, Plus, Pencil } from 'lucide-react';
 
 interface PlanDialogProps {
     trigger?: React.ReactNode;
+    plan?: {
+        id: string;
+        name: string;
+        price: number;
+        stripeProductId: string | null;
+        isDefault: boolean;
+    };
 }
 
-export function PlanDialog({ trigger }: PlanDialogProps) {
+export function PlanDialog({ trigger, plan }: PlanDialogProps) {
+    const isEditing = !!plan;
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [name, setName] = useState('');
-    const [price, setPrice] = useState(''); // User enters in dollars
-    const [stripeId, setStripeId] = useState('');
-    const [isDefault, setIsDefault] = useState(false);
+    const [name, setName] = useState(plan?.name || '');
+    const [price, setPrice] = useState(plan ? (plan.price / 100).toString() : ''); // User enters in dollars
+    const [stripeId, setStripeId] = useState(plan?.stripeProductId || '');
+    const [isDefault, setIsDefault] = useState(plan?.isDefault || false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -42,23 +50,29 @@ export function PlanDialog({ trigger }: PlanDialogProps) {
                 return;
             }
 
-            const result = await createPlan({
+            const payload = {
                 name,
                 price: priceInCents,
                 stripeProductId: stripeId || undefined,
                 isDefault,
-            });
+            };
+
+            const result = isEditing
+                ? await updatePlan(plan.id, payload)
+                : await createPlan(payload);
 
             if (result.success) {
-                toast.success('Plan created successfully');
+                toast.success(isEditing ? 'Plan updated successfully' : 'Plan created successfully');
                 setOpen(false);
-                // Reset form
-                setName('');
-                setPrice('');
-                setStripeId('');
-                setIsDefault(false);
+                if (!isEditing) {
+                    // Reset form only if creating
+                    setName('');
+                    setPrice('');
+                    setStripeId('');
+                    setIsDefault(false);
+                }
             } else {
-                toast.error(result.error || 'Failed to create plan');
+                toast.error(result.error || `Failed to ${isEditing ? 'update' : 'create'} plan`);
             }
         } catch (error) {
             console.error(error);
@@ -80,9 +94,9 @@ export function PlanDialog({ trigger }: PlanDialogProps) {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Create Plan</DialogTitle>
+                    <DialogTitle>{isEditing ? 'Edit Plan' : 'Create Plan'}</DialogTitle>
                     <DialogDescription>
-                        Add a new subscription tier.
+                        {isEditing ? 'Update subscription tier details.' : 'Add a new subscription tier.'}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,10 +145,10 @@ export function PlanDialog({ trigger }: PlanDialogProps) {
                             {loading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Creating...
+                                    {isEditing ? 'Saving...' : 'Creating...'}
                                 </>
                             ) : (
-                                'Create Plan'
+                                isEditing ? 'Save Changes' : 'Create Plan'
                             )}
                         </Button>
                     </DialogFooter>

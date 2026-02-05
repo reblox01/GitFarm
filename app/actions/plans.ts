@@ -41,6 +41,44 @@ export async function createPlan(data: {
     }
 }
 
+export async function updatePlan(id: string, data: {
+    name: string;
+    price: number;
+    stripeProductId?: string;
+    isDefault?: boolean;
+}) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== 'ADMIN') {
+        return { error: 'Unauthorized' };
+    }
+
+    try {
+        if (data.isDefault) {
+            // Unset other defaults
+            await prisma.plan.updateMany({
+                where: { isDefault: true, NOT: { id } },
+                data: { isDefault: false },
+            });
+        }
+
+        await prisma.plan.update({
+            where: { id },
+            data: {
+                name: data.name,
+                price: data.price,
+                stripeProductId: data.stripeProductId,
+                isDefault: data.isDefault || false,
+            },
+        });
+
+        revalidatePath('/admin/plans');
+        return { success: true };
+    } catch (error) {
+        console.error('Update plan error:', error);
+        return { error: 'Failed to update plan' };
+    }
+}
+
 export async function deletePlan(planId: string) {
     const session = await auth();
     if (!session?.user?.id || (session.user as any).role !== 'ADMIN') {

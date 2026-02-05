@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, GitCommit, Sparkles, TrendingUp } from 'lucide-react';
+import { Calendar, GitCommit, Sparkles, TrendingUp, Coins } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
@@ -36,6 +36,13 @@ export default async function DashboardPage() {
 
     const stats = [
         {
+            title: 'Available Credits',
+            value: user?.credits?.toLocaleString() || '0',
+            icon: Coins,
+            description: 'To be spent',
+            color: 'text-green-600'
+        },
+        {
             title: 'Total Commits',
             value: user?.commitJobs.reduce((acc, job) => acc + job.completedCommits, 0) || 0,
             icon: GitCommit,
@@ -65,7 +72,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat: any) => {
                     const Icon = stat.icon;
                     return (
@@ -74,10 +81,10 @@ export default async function DashboardPage() {
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
                                     {stat.title}
                                 </CardTitle>
-                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                <Icon className={`h-4 w-4 ${stat.color || 'text-muted-foreground'}`} />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stat.value}</div>
+                                <div className={`text-2xl font-bold ${stat.color || ''}`}>{stat.value}</div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     {stat.description}
                                 </p>

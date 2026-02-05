@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { SettingsTabs } from '@/components/settings-tabs';
 
@@ -8,6 +9,18 @@ export default async function SettingsPage() {
     if (!session?.user?.id) {
         redirect('/login');
     }
+
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            credits: true,
+        }
+    });
+
+    if (!user) redirect('/login');
 
     return (
         <div className="space-y-6">
@@ -19,9 +32,10 @@ export default async function SettingsPage() {
             </div>
 
             <SettingsTabs user={{
-                id: session.user.id,
-                name: session.user.name || '',
-                email: session.user.email || '',
+                id: user.id,
+                name: user.name || '',
+                email: user.email || '',
+                credits: user.credits,
             }} />
         </div>
     );

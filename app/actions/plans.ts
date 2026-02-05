@@ -6,7 +6,9 @@ import { revalidatePath } from 'next/cache';
 
 export async function createPlan(data: {
     name: string;
+    type: 'MONTHLY' | 'ONE_TIME';
     price: number;
+    credits: number;
     stripeProductId?: string;
     isDefault?: boolean;
 }) {
@@ -27,7 +29,9 @@ export async function createPlan(data: {
         await prisma.plan.create({
             data: {
                 name: data.name,
+                type: data.type,
                 price: data.price,
+                credits: data.credits,
                 stripeProductId: data.stripeProductId,
                 isDefault: data.isDefault || false,
             },
@@ -43,7 +47,9 @@ export async function createPlan(data: {
 
 export async function updatePlan(id: string, data: {
     name: string;
+    type: 'MONTHLY' | 'ONE_TIME';
     price: number;
+    credits: number;
     stripeProductId?: string;
     isDefault?: boolean;
 }) {
@@ -65,7 +71,9 @@ export async function updatePlan(id: string, data: {
             where: { id },
             data: {
                 name: data.name,
+                type: data.type,
                 price: data.price,
+                credits: data.credits,
                 stripeProductId: data.stripeProductId,
                 isDefault: data.isDefault || false,
             },

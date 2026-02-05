@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Settings2, Pencil } from 'lucide-react';
+import { Plus, Settings2, Pencil, Coins } from 'lucide-react';
 import { PlanDialog } from '@/components/admin/plan-dialog';
 import { PlanLimitsManager } from '@/components/admin/plan-limits-manager';
 
@@ -69,8 +69,10 @@ export default async function AdminPlansPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
+                                    <TableHead>Tier Name</TableHead>
+                                    <TableHead>Type</TableHead>
                                     <TableHead>Price</TableHead>
+                                    <TableHead>Credits</TableHead>
                                     <TableHead>Stripe ID</TableHead>
                                     <TableHead>Subscribers</TableHead>
                                     <TableHead>Status</TableHead>
@@ -80,7 +82,7 @@ export default async function AdminPlansPage() {
                             <TableBody>
                                 {plans.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                        <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
                                             No plans created yet.
                                         </TableCell>
                                     </TableRow>
@@ -88,24 +90,35 @@ export default async function AdminPlansPage() {
                                     plans.map((plan: any) => (
                                         <TableRow key={plan.id}>
                                             <TableCell className="font-medium">
-                                                {plan.name}
+                                                <div>{plan.name}</div>
                                                 {plan.isDefault && (
-                                                    <Badge variant="secondary" className="ml-2">Default</Badge>
+                                                    <Badge variant="secondary" className="mt-1">Default</Badge>
                                                 )}
                                             </TableCell>
-                                            <TableCell>${(plan.price / 100).toFixed(2)}</TableCell>
-                                            <TableCell className="font-mono text-xs">
+                                            <TableCell>
+                                                <Badge variant={plan.type === 'MONTHLY' ? 'default' : 'outline'}>
+                                                    {plan.type === 'MONTHLY' ? 'Monthly' : 'One-time'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="font-medium">${(plan.price / 100).toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1.5 text-green-600 font-bold">
+                                                    <Coins className="h-3.5 w-3.5" />
+                                                    {(plan.credits ?? 0).toLocaleString()}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="font-mono text-[10px] text-muted-foreground overflow-hidden max-w-[100px] truncate">
                                                 {plan.stripeProductId || '-'}
                                             </TableCell>
                                             <TableCell>{plan._count.subscriptions}</TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">Active</Badge>
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <PlanDialog
                                                     plan={plan}
                                                     trigger={
-                                                        <Button variant="ghost" size="sm">
+                                                        <Button variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary">
                                                             <Pencil className="mr-2 h-4 w-4" />
                                                             Edit
                                                         </Button>

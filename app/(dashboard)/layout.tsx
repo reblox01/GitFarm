@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { AppSidebar } from "@/components/app-sidebar"
 import {
     SidebarInset,
@@ -23,13 +24,22 @@ export default async function DashboardLayout({
 }) {
     const session = await auth();
 
-    if (!session) {
+    if (!session?.user?.id) {
         redirect('/login');
     }
 
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { credits: true }
+    });
+
     return (
         <SidebarProvider>
-            <AppSidebar user={session.user} role={(session.user as any).role} />
+            <AppSidebar
+                user={session.user}
+                role={(session.user as any).role}
+                credits={user?.credits || 0}
+            />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
                     <div className="flex items-center gap-2 px-4">

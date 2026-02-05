@@ -19,6 +19,8 @@ import {
     CreditCard,
     Flag,
     Settings,
+    Coins,
+    ArrowUpCircle,
 } from "lucide-react"
 import { usePathname } from 'next/navigation'
 
@@ -97,7 +99,7 @@ const data = {
     ],
 }
 
-export function AppSidebar({ user, role, ...props }: React.ComponentProps<typeof Sidebar> & { user: any, role?: string }) {
+export function AppSidebar({ user, role, credits, ...props }: React.ComponentProps<typeof Sidebar> & { user: any, role?: string, credits?: number }) {
     const pathname = usePathname();
     const isAdmin = role === 'ADMIN';
 
@@ -160,6 +162,25 @@ export function AppSidebar({ user, role, ...props }: React.ComponentProps<typeof
                 )}
             </SidebarContent>
             <SidebarFooter>
+                <div className="px-3 py-2">
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton size="lg" className="bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-500 border border-green-500/20 group" asChild>
+                                <a href="/dashboard/settings?tab=billing">
+                                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-green-500 text-white shadow-sm group-hover:scale-110 transition-transform">
+                                        <Coins className="size-4" />
+                                    </div>
+                                    <div className="grid flex-1 text-left text-sm leading-tight">
+                                        <span className="truncate font-bold">{credits?.toLocaleString() || 0} Credits</span>
+                                        <span className="truncate text-[10px] flex items-center gap-1 opacity-80">
+                                            <ArrowUpCircle className="size-2 text-green-600 dark:text-green-400" /> Upgrade Plan
+                                        </span>
+                                    </div>
+                                </a>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </div>
                 <NavUser user={{
                     name: user?.name || data.user.name,
                     email: user?.email || data.user.email,

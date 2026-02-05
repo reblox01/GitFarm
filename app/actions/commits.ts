@@ -91,15 +91,33 @@ export async function createCommitBatch(
     if (!session?.user?.id) return { error: 'Unauthorized' };
 
     try {
-        const token = await getGitHubAccount(session.user.id);
+        const userId = session.user.id;
+        const commitCount = commits.length;
+
+        // 1. Check Credits
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { credits: true }
+        });
+
+        if (!user || user.credits < commitCount) {
+            return { error: `Insufficient credits. You need ${commitCount} credits for this batch, but you only have ${user?.credits || 0}.` };
+        }
+
+        const token = await getGitHubAccount(userId);
         const results: { sha: string; date: string }[] = [];
         let currentParentSha = commits[0].parentSha;
 
         for (const commit of commits) {
-            // Get tree from parent (empty tree trick or just use parent's tree)
+            // Get tree from parent
             const commitInfoResponse = await fetch(`https://api.github.com/repos/${repository}/git/commits/${currentParentSha}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
+
+            if (!commitInfoResponse.ok) {
+                throw new Error(`Failed to fetch parent commit: ${await commitInfoResponse.text()}`);
+            }
+
             const commitInfo = await commitInfoResponse.json();
             const treeSha = commitInfo.tree.sha;
 
@@ -137,6 +155,15 @@ export async function createCommitBatch(
             results.push({ sha: newCommit.sha, date: commit.date });
         }
 
+        // 2. Deduct Credits after successful batch
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                credits: { decrement: results.length }
+            }
+        });
+
+        revalidatePath('/dashboard');
         return { success: true, lastSha: currentParentSha, count: results.length };
     } catch (error: any) {
         return { error: error.message };

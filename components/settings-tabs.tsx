@@ -4,9 +4,11 @@ import { useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ProfileForm } from '@/components/forms/profile-form';
 import { PasswordForm } from '@/components/forms/password-form';
 import { GitHubIntegration } from '@/components/forms/github-integration';
+import { Coins, ArrowUpCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface SettingsTabsProps {
@@ -14,6 +16,7 @@ interface SettingsTabsProps {
         id: string;
         name: string;
         email: string;
+        credits: number;
     };
 }
 
@@ -73,27 +76,26 @@ export function SettingsTabs({ user }: SettingsTabsProps) {
                     <CardHeader>
                         <CardTitle>Usage & Credits</CardTitle>
                         <CardDescription>
-                            Track your monthly usage
+                            Your remaining balance and usage statistics
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span>Commits Generated</span>
-                                <span className="font-medium">0 / 100</span>
+                        <div className="flex items-center justify-between p-4 bg-green-500/5 border border-green-500/20 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-green-500 rounded-lg text-white">
+                                    <Coins className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Available Balance</p>
+                                    <p className="text-2xl font-bold text-green-600 dark:text-green-500">{user.credits?.toLocaleString() || 0} Credits</p>
+                                </div>
                             </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2">
-                                <div className="bg-green-600 h-2 rounded-full" style={{ width: '0%' }} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span>Active Tasks</span>
-                                <span className="font-medium">0 / 3</span>
-                            </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2">
-                                <div className="bg-green-600 h-2 rounded-full" style={{ width: '0%' }} />
-                            </div>
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700" asChild>
+                                <a href="/dashboard/settings?tab=billing">
+                                    <ArrowUpCircle className="mr-2 h-4 w-4" />
+                                    Get More
+                                </a>
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>

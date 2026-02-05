@@ -21,6 +21,7 @@ model User {
   name      String?
   avatarUrl String?
   role      Role     @default(USER)
+  credits   Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -82,7 +83,9 @@ model VerificationToken {
 model Plan {
   id              String   @id @default(cuid())
   name            String   @unique
+  type            PlanType @default(MONTHLY)
   price           Int // in cents
+  credits         Int      @default(0)
   stripeProductId String?
   lemonProductId  String?
   isDefault       Boolean  @default(false)
@@ -92,6 +95,11 @@ model Plan {
   // Relations
   features      PlanFeature[]
   subscriptions UserSubscription[]
+}
+
+enum PlanType {
+  MONTHLY
+  ONE_TIME
 }
 
 model Feature {

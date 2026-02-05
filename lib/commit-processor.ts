@@ -27,14 +27,20 @@ export async function processCommitJob(jobId: string) {
     }
 
     try {
+        const pattern = job.pattern as unknown as CommitPattern[];
+        const selectedDays = pattern.filter((day) => day.selected);
+        const commitCount = selectedDays.length;
+
+        // Check Credits
+        if (job.user.credits < commitCount) {
+            throw new Error(`Insufficient credits. Required: ${commitCount}, Available: ${job.user.credits}`);
+        }
+
         // Update status to running
         await prisma.commitJob.update({
             where: { id: jobId },
             data: { status: 'RUNNING' },
         });
-
-        const pattern = job.pattern as unknown as CommitPattern[];
-        const selectedDays = pattern.filter((day) => day.selected);
 
         // Get user's GitHub access token from NextAuth account
         const account = await prisma.account.findFirst({
@@ -115,6 +121,14 @@ export async function processCommitJob(jobId: string) {
                 status: 'COMPLETED',
                 completedAt: new Date(),
             },
+        });
+
+        // Deduct Credits
+        await prisma.user.update({
+            where: { id: job.userId },
+            data: {
+                credits: { decrement: completedCommits }
+            }
         });
 
         // Cleanup

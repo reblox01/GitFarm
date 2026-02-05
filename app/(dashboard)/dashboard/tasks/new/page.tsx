@@ -29,7 +29,7 @@ export default async function NewTaskPage() {
         }
     });
 
-    const canUseTasks = user?.subscription?.plan.features.some(f => f.feature.key === 'daily_tasks');
+    const canUseTasks = (user?.subscription?.plan.features as any[] || []).some((f: any) => f.feature.key === 'daily_tasks');
 
     if (!canUseTasks) {
         redirect('/dashboard/tasks');

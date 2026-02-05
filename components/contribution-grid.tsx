@@ -100,19 +100,19 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
         fetchRepoStats();
     }, [selectedRepo]);
 
-    const selectedCount = grid.filter((cell) => cell.selected).length;
+    const selectedCount = (grid as any[]).filter((cell: any) => cell.selected).length;
     const isOverLimit = selectedCount >= credits && drawMode === 'fill';
 
     const toggleCell = (week: number, day: number) => {
         setGrid((prev) => {
-            const isCurrentlySelected = prev.find(c => c.week === week && c.day === day)?.selected;
+            const isCurrentlySelected = (prev as any[]).find((c: any) => c.week === week && c.day === day)?.selected;
 
             // If trying to select a new cell but already at limit
             if (!isCurrentlySelected && drawMode === 'fill' && selectedCount >= credits) {
                 return prev;
             }
 
-            return prev.map((cell) =>
+            return (prev as any[]).map((cell: any) =>
                 cell.week === week && cell.day === day
                     ? { ...cell, selected: drawMode === 'fill' }
                     : cell
@@ -161,7 +161,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
         setGrid((prev) => {
             let filled = 0;
             // First clear
-            const cleared = prev.map(c => ({ ...c, selected: false }));
+            const cleared = (prev as any[]).map((c: any) => ({ ...c, selected: false }));
             // Then random fill up to limit
             return cleared.map((cell) => {
                 if (filled < credits && Math.random() > 0.7) {
@@ -179,7 +179,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
             return;
         }
 
-        const selectedCells = grid.filter(cell => cell.selected);
+        const selectedCells = (grid as any[]).filter((cell: any) => cell.selected);
         if (selectedCells.length === 0) return;
 
         // Reset and Open Dialog
@@ -198,7 +198,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
             // Note: We need parentSha for each commit, which depends on the previous one.
             // Client-side, we can just prepare dates. The logic loop will handle chaining SHAs.
 
-            const rawCommits = selectedCells.map(cell => {
+            const rawCommits = selectedCells.map((cell: any) => {
                 const weekDiff = 51 - cell.week;
                 const dayDiff = currentDayOfWeek - cell.day;
                 const totalDaysDiff = (weekDiff * 7) + dayDiff;
@@ -236,7 +236,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
             setProgressStep('creating');
 
             for (let i = 0; i < rawCommits.length; i += BATCH_SIZE) {
-                const batch = rawCommits.slice(i, i + BATCH_SIZE).map(c => ({
+                const batch = rawCommits.slice(i, i + BATCH_SIZE).map((c: any) => ({
                     ...c,
                     parentSha: '' // Will be set in the loop logic if we were creating individually, but for batch API we need to pass chain
                 }));
@@ -301,7 +301,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
             // Record failed job
             await recordCommitJob({
                 repository: selectedRepo,
-                totalCommits: grid.filter(cell => cell.selected).length,
+                totalCommits: (grid as any[]).filter((cell: any) => cell.selected).length,
                 status: 'FAILED',
                 errorMessage: error.message || 'An unknown error occurred'
             });

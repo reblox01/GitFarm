@@ -38,8 +38,8 @@ export default async function TasksPage() {
         orderBy: { createdAt: 'desc' },
     });
 
-    const canUseTasks = user?.subscription?.plan.features.some(f => f.feature.key === 'daily_tasks');
-    const taskLimit = user?.subscription?.plan.features.find(f => f.feature.key === 'daily_tasks')?.limitValue;
+    const canUseTasks = (user?.subscription?.plan.features as any[] || []).some((f: any) => f.feature.key === 'daily_tasks');
+    const taskLimit = (user?.subscription?.plan.features as any[] || []).find((f: any) => f.feature.key === 'daily_tasks')?.limitValue;
 
     if (!canUseTasks) {
         return (

@@ -55,7 +55,7 @@ export default async function HistoryPage() {
                         </div>
                     ) : (
                         <div className="divide-y border-t">
-                            {jobs.map((job) => (
+                            {jobs.map((job: any) => (
                                 <div key={job.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 hover:bg-muted/50 transition-colors gap-4">
                                     <div className="flex items-start gap-4">
                                         <div className={`p-3 rounded-xl ${job.status === 'COMPLETED' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :

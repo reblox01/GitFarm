@@ -431,7 +431,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
                         <Button
                             variant={drawMode === 'fill' ? 'default' : 'outline'}
                             onClick={() => setDrawMode('fill')}
-                            className={`justify-start shadow-sm ${drawMode === 'fill' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                            className={`justify-start shadow-sm ${drawMode === 'fill' ? 'text-white bg-green-600 hover:bg-green-700' : ''}`}
                         >
                             <Brush className={`mr-2 h-4 w-4 ${drawMode === 'fill' ? 'text-white' : 'text-green-600'}`} />
                             Fill Mode
@@ -439,7 +439,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
                         <Button
                             variant={drawMode === 'erase' ? 'default' : 'outline'}
                             onClick={() => setDrawMode('erase')}
-                            className="justify-start shadow-sm"
+                            className={`justify-start shadow-sm ${drawMode === 'erase' ? 'text-white bg-red-600 hover:bg-red-700' : ''}`}
                         >
                             <Eraser className={`mr-2 h-4 w-4 ${drawMode === 'erase' ? 'text-white' : 'text-red-600'}`} />
                             Erase Mode
@@ -512,7 +512,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
                 <div className="flex justify-end animate-in fade-in duration-500">
                     <Button
                         size="lg"
-                        className={`px-8 shadow-lg transition-all ${isOverLimit ? 'bg-green-600/50 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                        className={`px-8 shadow-lg transition-all ${isOverLimit ? 'text-white bg-green-600/50 cursor-not-allowed' : 'text-white bg-green-600 hover:bg-green-700'}`}
                         disabled={selectedCount === 0 || !selectedRepo}
                         onClick={handleGenerateCommits}
                     >

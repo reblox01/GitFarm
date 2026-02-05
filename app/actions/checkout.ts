@@ -4,6 +4,12 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { stripe } from '@/lib/payments/stripe';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
+import { checkRateLimit, apiLimiter } from '@/lib/rate-limit';
+
+const CheckoutSchema = z.object({
+    planId: z.string().cuid(),
+});
 
 export async function createCheckoutSession(planId: string) {
     const session = await auth();
@@ -11,7 +17,15 @@ export async function createCheckoutSession(planId: string) {
         throw new Error('Unauthorized');
     }
 
+    const validated = CheckoutSchema.parse({ planId });
     const userId = session.user.id;
+
+    // Rate limiting (per user)
+    const { success } = await checkRateLimit(apiLimiter, `checkout:${userId}`);
+    if (!success) {
+        throw new Error('Too many checkout attempts. Please wait.');
+    }
+
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -20,13 +34,12 @@ export async function createCheckoutSession(planId: string) {
             stripeCustomerId: true,
         }
     });
-
     if (!user) {
         throw new Error('User not found');
     }
 
     const plan = await prisma.plan.findUnique({
-        where: { id: planId },
+        where: { id: validated.planId },
     });
 
     if (!plan) {
@@ -80,7 +93,7 @@ export async function createCheckoutSession(planId: string) {
         cancel_url: `${process.env.NEXTAUTH_URL}/dashboard/plans?checkout=cancel`,
         metadata: {
             userId,
-            planId,
+            planId: validated.planId,
             type: plan.type,
         },
     });

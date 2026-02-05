@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { GitGraph, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { GitGraph, Trash2, Sparkles, Loader2, GitCommit } from 'lucide-react';
 import { toast } from 'sonner';
 import { getRepoState, createCommitBatch, pushChanges, initializeRepository } from '@/app/actions/commits';
 import { subDays } from 'date-fns';
@@ -51,6 +51,9 @@ export function ContributionGrid() {
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const [isMinimized, setIsMinimized] = useState(false);
 
+    const [repoStats, setRepoStats] = useState<{ commitCount: number } | null>(null);
+    const [loadingStats, setLoadingStats] = useState(false);
+
     useEffect(() => {
         async function fetchRepositories() {
             try {
@@ -68,6 +71,31 @@ export function ContributionGrid() {
         }
         fetchRepositories();
     }, []);
+
+    useEffect(() => {
+        async function fetchRepoStats() {
+            if (!selectedRepo) {
+                setRepoStats(null);
+                return;
+            }
+
+            setLoadingStats(true);
+            try {
+                const state = await getRepoState(selectedRepo);
+                if (state.success) {
+                    setRepoStats({ commitCount: state.commitCount || 0 });
+                } else {
+                    setRepoStats(null);
+                }
+            } catch (error) {
+                console.error('Failed to fetch repo stats', error);
+                setRepoStats(null);
+            } finally {
+                setLoadingStats(false);
+            }
+        }
+        fetchRepoStats();
+    }, [selectedRepo]);
 
     const toggleCell = (week: number, day: number) => {
         setGrid((prev) =>
@@ -394,6 +422,18 @@ export function ContributionGrid() {
                                     ))}
                                 </SelectContent>
                             </Select>
+                        )}
+                        {repoStats && !loadingStats && (
+                            <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                                <GitCommit className="h-3 w-3" />
+                                <span>{repoStats.commitCount.toLocaleString()} total commits</span>
+                            </div>
+                        )}
+                        {loadingStats && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <span>Fetching stats...</span>
+                            </div>
                         )}
                         <p className="text-xs text-muted-foreground">
                             Commits will be backdated to match the calendar pattern selected above.

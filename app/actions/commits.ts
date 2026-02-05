@@ -51,10 +51,32 @@ export async function getRepoState(repository: string) {
 
         const refData = await refResponse.json();
 
+        // Get commit count (via per_page=1 trick)
+        const commitsResponse = await fetch(`https://api.github.com/repos/${repository}/commits?per_page=1&sha=${defaultBranch}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        let commitCount = 0;
+        const linkHeader = commitsResponse.headers.get('Link');
+        if (linkHeader) {
+            const match = linkHeader.match(/page=(\d+)>; rel="last"/);
+            if (match) {
+                commitCount = parseInt(match[1]);
+            } else if (commitsResponse.ok) {
+                // If there's no "last" link but the request succeeded, it might be the only page
+                const data = await commitsResponse.json();
+                commitCount = data.length;
+            }
+        } else if (commitsResponse.ok) {
+            const data = await commitsResponse.json();
+            commitCount = data.length;
+        }
+
         return {
             success: true,
             sha: refData.object.sha,
             branch: defaultBranch,
+            commitCount,
         };
     } catch (error: any) {
         return { error: error.message };

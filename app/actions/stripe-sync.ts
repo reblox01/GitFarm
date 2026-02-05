@@ -24,7 +24,7 @@ export async function syncStripeCredits() {
 
     console.log(`[Stripe Sync] Found ${sessions.data.length} sessions for customer ${user.stripeCustomerId}`);
 
-    const paidSession = sessions.data.find(s => s.payment_status === 'paid');
+    const paidSession = (sessions.data as any[]).find((s: any) => s.payment_status === 'paid');
 
     if (paidSession) {
         console.log(`[Stripe Sync] Found paid session: ${paidSession.id}`);

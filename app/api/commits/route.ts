@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         const validated = createJobSchema.parse(body);
 
         // Calculate total commits
-        const selectedDays = validated.pattern.filter((day) => day.selected);
+        const selectedDays = validated.pattern.filter((day: any) => day.selected);
         const totalCommits = selectedDays.length;
 
         if (totalCommits === 0) {
@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
         });
 
         // Get commits per month limit
-        const commitsFeature = user?.subscription?.plan.features.find(
-            (pf) => pf.feature.key === 'commits_per_month'
+        const commitsFeature = (user?.subscription?.plan.features as any[] || []).find(
+            (pf: any) => pf.feature.key === 'commits_per_month'
         );
         const monthlyLimit = commitsFeature?.limitValue || 100; // Default to 100
 

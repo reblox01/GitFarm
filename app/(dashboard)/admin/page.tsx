@@ -132,7 +132,7 @@ export default async function AdminPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
-                            {recentUsers.length > 0 ? recentUsers.map(user => (
+                            {recentUsers.length > 0 ? (recentUsers as any[]).map((user: any) => (
                                 <div key={user.id} className="flex items-center">
                                     <Avatar className="h-9 w-9">
                                         <AvatarImage src={user.avatarUrl || ''} alt={user.name || ''} />
@@ -158,7 +158,7 @@ export default async function AdminPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
-                            {recentActivity.length > 0 ? recentActivity.map(job => (
+                            {recentActivity.length > 0 ? (recentActivity as any[]).map((job: any) => (
                                 <div key={job.id} className="flex items-start">
                                     <div className={`mt-1 h-2 w-2 rounded-full ${job.status === 'COMPLETED' ? 'bg-green-500' :
                                         job.status === 'FAILED' ? 'bg-red-500' : 'bg-blue-500'

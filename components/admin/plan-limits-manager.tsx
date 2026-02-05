@@ -84,7 +84,7 @@ export function PlanLimitsManager() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[200px]">Feature</TableHead>
-                                    {data?.plans.map(plan => (
+                                    {data?.plans.map((plan: any) => (
                                         <TableHead key={plan.id} className="text-center">
                                             {plan.name}
                                             <div className="text-xs font-normal text-muted-foreground">
@@ -95,13 +95,13 @@ export function PlanLimitsManager() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {data?.allFeatures.map(feature => (
+                                {data?.allFeatures.map((feature: any) => (
                                     <TableRow key={feature.id}>
                                         <TableCell className="font-medium">
                                             <div>{feature.name}</div>
                                             <div className="text-xs text-muted-foreground">{feature.key}</div>
                                         </TableCell>
-                                        {data.plans.map(plan => {
+                                        {data.plans.map((plan: any) => {
                                             const planFeature = plan.features.find((f: any) => f.featureId === feature.id);
                                             const isEnabled = !!planFeature;
                                             const isSaving = saving === `${plan.id}-${feature.id}`;

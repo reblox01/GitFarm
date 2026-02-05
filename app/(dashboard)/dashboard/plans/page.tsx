@@ -26,7 +26,7 @@ export default async function PlansPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
-                {plans.map((plan) => (
+                {(plans as any[]).map((plan: any) => (
                     <Card key={plan.id} className={`relative flex flex-col ${plan.isDefault ? 'border-primary shadow-lg scale-105 z-10' : 'border-border'}`}>
                         {plan.isDefault && (
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2">

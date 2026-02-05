@@ -373,7 +373,7 @@ export function ContributionGrid({ initialCredits = 0 }: { initialCredits?: numb
                                     <SelectValue placeholder="Select a repository..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {repositories.map((repo) => (
+                                    {(repositories as any[]).map((repo: any) => (
                                         <SelectItem key={repo.id} value={repo.fullName}>
                                             <div className="flex items-center gap-2">
                                                 <span>{repo.fullName}</span>

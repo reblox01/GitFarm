@@ -138,7 +138,7 @@ export function LandingPage() {
                     </p>
                 </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {features.map((feature) => {
+                    {features.map((feature: any) => {
                         const Icon = feature.icon;
                         return (
                             <Card key={feature.title} className="border-2 hover:border-primary transition-colors">
@@ -166,7 +166,7 @@ export function LandingPage() {
                     </p>
                 </div>
                 <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                    {plans.map((plan) => (
+                    {plans.map((plan: any) => (
                         <Card
                             key={plan.name}
                             className={`relative ${plan.popular ? 'border-2 border-primary shadow-lg scale-105' : ''
@@ -187,7 +187,7 @@ export function LandingPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <ul className="space-y-3">
-                                    {plan.features.map((feature) => (
+                                    {plan.features.map((feature: any) => (
                                         <li key={feature} className="flex items-center gap-2">
                                             <Check className="h-5 w-5 text-green-600" />
                                             <span>{feature}</span>

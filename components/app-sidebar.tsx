@@ -104,7 +104,7 @@ export function AppSidebar({ user, role, credits, planName, ...props }: React.Co
     const isAdmin = role === 'ADMIN';
 
     const navItems = isAdmin
-        ? [...data.navMain, ...data.navAdmin.map(item => ({ ...item, section: 'Admin' }))]
+        ? [...data.navMain, ...data.navAdmin.map((item: any) => ({ ...item, section: 'Admin' }))]
         : data.navMain;
 
     return (
@@ -130,7 +130,7 @@ export function AppSidebar({ user, role, credits, planName, ...props }: React.Co
                 <SidebarGroup>
                     <SidebarGroupLabel>Platform</SidebarGroupLabel>
                     <SidebarMenu>
-                        {data.navMain.map((item) => (
+                        {data.navMain.map((item: any) => (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
                                     <a href={item.url}>
@@ -147,7 +147,7 @@ export function AppSidebar({ user, role, credits, planName, ...props }: React.Co
                     <SidebarGroup>
                         <SidebarGroupLabel>Admin</SidebarGroupLabel>
                         <SidebarMenu>
-                            {data.navAdmin.map((item) => (
+                            {data.navAdmin.map((item: any) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
                                         <a href={item.url}>

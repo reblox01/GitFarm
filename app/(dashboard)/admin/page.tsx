@@ -2,7 +2,10 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CreditCard, Activity, GitCommit } from 'lucide-react';
+import { Users, CreditCard, Activity, GitCommit, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { formatDistanceToNow, subMonths, startOfMonth } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 export default async function AdminPage() {
     const session = await auth();
@@ -11,17 +14,53 @@ export default async function AdminPage() {
         redirect('/dashboard');
     }
 
-    // specific stats
-    const [userCount, subCount, taskCount] = await Promise.all([
+    const now = new Date();
+    const lastMonth = subMonths(now, 1);
+    const startOfCurrentMonth = startOfMonth(now);
+    const startOfLastMonth = startOfMonth(lastMonth);
+
+    // Fetch stats
+    const [
+        userCount,
+        lastMonthUserCount,
+        subCount,
+        taskCount,
+        commitStats,
+        recentUsers,
+        recentActivity
+    ] = await Promise.all([
         prisma.user.count(),
+        prisma.user.count({ where: { createdAt: { lt: startOfCurrentMonth } } }),
         prisma.userSubscription.count({ where: { status: 'ACTIVE' } }),
-        prisma.task.count(),
+        prisma.task.count({ where: { active: true } }),
+        prisma.commitJob.aggregate({
+            _sum: {
+                completedCommits: true
+            }
+        }),
+        prisma.user.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+        }),
+        prisma.commitJob.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                        avatarUrl: true
+                    }
+                }
+            }
+        })
     ]);
 
-    // calculate total commits (mock calculation from pattern or store it)
-    // For now we'll just query commit jobs if we used them, but we don't use CommitJob model in the new action yet.
-    // We'll placeholder it.
-    const totalCommits = 0;
+    const totalCommits = commitStats._sum.completedCommits || 0;
+    const userGrowth = lastMonthUserCount > 0
+        ? ((userCount - lastMonthUserCount) / lastMonthUserCount) * 100
+        : 100;
 
     return (
         <div className="space-y-6">
@@ -37,8 +76,8 @@ export default async function AdminPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{userCount}</div>
-                        <p className="text-xs text-muted-foreground">
-                            +10% from last month
+                        <p className={`text-xs ${userGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {userGrowth >= 0 ? '+' : ''}{userGrowth.toFixed(1)}% from last month
                         </p>
                     </CardContent>
                 </Card>
@@ -52,7 +91,7 @@ export default async function AdminPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{subCount}</div>
                         <p className="text-xs text-muted-foreground">
-                            {((subCount / userCount) * 100).toFixed(1)}% conversion rate
+                            {userCount > 0 ? ((subCount / userCount) * 100).toFixed(1) : 0}% conversion rate
                         </p>
                     </CardContent>
                 </Card>
@@ -78,7 +117,7 @@ export default async function AdminPage() {
                         <GitCommit className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totalCommits}</div>
+                        <div className="text-2xl font-bold">{totalCommits.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground">
                             Generated across all users
                         </p>
@@ -92,7 +131,25 @@ export default async function AdminPage() {
                         <CardTitle>Recent Signups</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground text-sm">No recent signups to display.</p>
+                        <div className="space-y-8">
+                            {recentUsers.length > 0 ? recentUsers.map(user => (
+                                <div key={user.id} className="flex items-center">
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={user.avatarUrl || ''} alt={user.name || ''} />
+                                        <AvatarFallback>{(user.name || user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="ml-4 space-y-1">
+                                        <p className="text-sm font-medium leading-none">{user.name || 'Anonymous'}</p>
+                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                    </div>
+                                    <div className="ml-auto font-medium text-xs text-muted-foreground">
+                                        {formatDistanceToNow(user.createdAt, { addSuffix: true })}
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-muted-foreground text-sm">No recent signups to display.</p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
                 <Card className="col-span-3">
@@ -100,7 +157,37 @@ export default async function AdminPage() {
                         <CardTitle>Recent Activity</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground text-sm">No recent activity.</p>
+                        <div className="space-y-8">
+                            {recentActivity.length > 0 ? recentActivity.map(job => (
+                                <div key={job.id} className="flex items-start">
+                                    <div className={`mt-1 h-2 w-2 rounded-full ${job.status === 'COMPLETED' ? 'bg-green-500' :
+                                        job.status === 'FAILED' ? 'bg-red-500' : 'bg-blue-500'
+                                        }`} />
+                                    <div className="ml-4 space-y-1">
+                                        <p className="text-sm font-medium leading-none">
+                                            {job.user.name || job.user.email}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {job.status === 'COMPLETED' ? 'Generated' : 'Failed to generate'} {job.totalCommits} commits
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            {formatDistanceToNow(job.createdAt, { addSuffix: true })}
+                                        </p>
+                                    </div>
+                                    <div className="ml-auto">
+                                        {job.status === 'COMPLETED' ? (
+                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                        ) : job.status === 'FAILED' ? (
+                                            <XCircle className="h-4 w-4 text-red-500" />
+                                        ) : (
+                                            <Clock className="h-4 w-4 text-blue-500 animate-pulse" />
+                                        )}
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-muted-foreground text-sm">No recent activity.</p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </div>

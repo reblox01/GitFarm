@@ -147,8 +147,17 @@ export function ContributionGrid() {
 
             setProgress({ current: 0, total: rawCommits.length });
 
+
             // 2. Initial Repo State (Get HEAD)
             const repoState = await getRepoState(selectedRepo);
+
+            // Handle Empty Repo specifically
+            if (repoState.error && repoState.error.includes('Repository is empty')) {
+                setErrorMessage(repoState.error);
+                setProgressStep('needs_init');
+                return; // Stop here, wait for user action
+            }
+
             if (repoState.error || !repoState.sha || !repoState.branch) {
                 throw new Error(repoState.error || 'Failed to initialize repository state');
             }
@@ -248,7 +257,7 @@ export function ContributionGrid() {
     };
 
     const selectedCount = grid.filter((cell) => cell.selected).length;
-    const isRepoEmptyError = errorMessage?.toLowerCase().includes('empty');
+    const isRepoEmpty = progressStep === 'needs_init';
 
     return (
         <div className="space-y-6" onMouseUp={handleMouseUp}>
@@ -258,8 +267,8 @@ export function ContributionGrid() {
                 progress={progress}
                 message={errorMessage}
                 onClose={handleCloseDialog}
-                actionLabel={isRepoEmptyError ? "Initialize Repository" : undefined}
-                onAction={isRepoEmptyError ? handleInitializeRepo : undefined}
+                actionLabel={isRepoEmpty ? "Initialize Repository" : undefined}
+                onAction={isRepoEmpty ? handleInitializeRepo : undefined}
             />
 
             {/* Show specific error action if applicable - actually we can put this INSIDE the dialog or show a toast action */}

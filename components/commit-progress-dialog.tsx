@@ -10,10 +10,10 @@ import {
     AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export type ProgressStep = 'idle' | 'init' | 'creating' | 'pushing' | 'complete' | 'error';
+export type ProgressStep = 'idle' | 'init' | 'needs_init' | 'creating' | 'pushing' | 'complete' | 'error';
 
 interface CommitProgressDialogProps {
     isOpen: boolean;
@@ -46,6 +46,8 @@ export function CommitProgressDialog({ isOpen, step, progress, message, onClose,
                     <div className="flex flex-col items-center justify-center space-y-4">
                         {step === 'error' ? (
                             <AlertCircle className="h-10 w-10 text-destructive" />
+                        ) : step === 'needs_init' ? (
+                            <Sparkles className="h-10 w-10 text-yellow-500" />
                         ) : step === 'complete' ? (
                             <CheckCircle2 className="h-10 w-10 text-green-500" />
                         ) : (
@@ -55,6 +57,7 @@ export function CommitProgressDialog({ isOpen, step, progress, message, onClose,
                         <div className="text-center space-y-1">
                             <p className="font-medium text-lg">
                                 {step === 'init' && "Initializing..."}
+                                {step === 'needs_init' && "Initialization Required"}
                                 {step === 'creating' && "Creating Commits"}
                                 {step === 'pushing' && "Pushing Changes"}
                                 {step === 'complete' && "Success!"}
@@ -62,6 +65,7 @@ export function CommitProgressDialog({ isOpen, step, progress, message, onClose,
                             </p>
                             <p className="text-sm text-muted-foreground">
                                 {step === 'init' && "Verifying repository access..."}
+                                {step === 'needs_init' && (message || "repository needs to be initialized first.")}
                                 {step === 'creating' && `Processed ${progress.current} of ${progress.total} commits`}
                                 {step === 'pushing' && "Syncing with GitHub..."}
                                 {step === 'complete' && "Contributions created successfully."}
@@ -79,9 +83,9 @@ export function CommitProgressDialog({ isOpen, step, progress, message, onClose,
                     )}
                 </div>
 
-                {(step === 'complete' || step === 'error') && (
+                {(step === 'complete' || step === 'error' || step === 'needs_init') && (
                     <AlertDialogFooter>
-                        {step === 'error' && actionLabel && onAction && (
+                        {(step === 'error' || step === 'needs_init') && actionLabel && onAction && (
                             <Button variant="default" onClick={onAction}>
                                 {actionLabel}
                             </Button>

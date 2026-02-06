@@ -69,13 +69,13 @@ export async function sendVerificationEmail(email: string, token: string, name: 
     }
 }
 
-export async function sendInvitationEmail(email: string, token: string, inviterName: string) {
+export async function sendInvitationEmail(email: string, token: string, inviterName: string, role: string, inviterEmail?: string) {
     const inviteUrl = `${APP_URL}/accept-invite/${token}`;
 
     if (!process.env.RESEND_API_KEY) {
         console.log('⚠️ RESEND_API_KEY not found. Logging email instead:');
         console.log(`To: ${email}`);
-        console.log(`Subject: Admin Invitation from ${inviterName}`);
+        console.log(`Subject: Invitation to join GitFarm as ${role}`);
         console.log(`Link: ${inviteUrl}`);
         return { success: true, simulated: true };
     }
@@ -84,7 +84,8 @@ export async function sendInvitationEmail(email: string, token: string, inviterN
         const data = await resend.emails.send({
             from: EMAIL_FROM,
             to: email,
-            subject: `You've been invited to join GitFarm as an Admin`,
+            bcc: inviterEmail, // Send copy to inviter as requested
+            subject: `You've been invited to join GitFarm as ${role === 'ADMIN' ? 'an Administrator' : 'a User'}`,
             html: `
                 <!DOCTYPE html>
                 <html>
@@ -105,8 +106,8 @@ export async function sendInvitationEmail(email: string, token: string, inviterN
                             <a href="${APP_URL}" class="logo">GitFarm</a>
                         </div>
                         <div class="content">
-                            <h2>Admin Invitation</h2>
-                            <p>${inviterName} has invited you to join GitFarm as an Administrator.</p>
+                            <h2>Invitation to join GitFarm</h2>
+                            <p>${inviterName} has invited you to join GitFarm as ${role === 'ADMIN' ? 'an Administrator' : 'a User'}.</p>
                             <div style="text-align: center;">
                                 <a href="${inviteUrl}" class="button">Accept Invitation</a>
                             </div>

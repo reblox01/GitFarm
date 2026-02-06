@@ -87,7 +87,7 @@ export function SettingsTabs({ user, subscription }: SettingsTabsProps) {
                             </Badge>
                         </div>
 
-                        {subscription?.status === 'ACTIVE' && (
+                        {subscription?.status === 'ACTIVE' && subscription.plan.price > 0 && (
                             <div className="flex justify-end pt-4">
                                 <Button
                                     variant="outline"

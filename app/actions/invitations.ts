@@ -39,7 +39,7 @@ export async function inviteUser(formData: FormData) {
                 data: { token, expires, role, createdAt: new Date() }
             });
 
-            await sendInvitationEmail(email, token, session.user.name || 'Admin');
+            await sendInvitationEmail(email, token, session.user.name || 'Admin', role, session.user.email || undefined);
             revalidatePath('/admin/users');
             return { success: true, message: 'Invitation resent' };
         }
@@ -57,7 +57,7 @@ export async function inviteUser(formData: FormData) {
             },
         });
 
-        await sendInvitationEmail(email, token, session.user.name || 'Admin');
+        await sendInvitationEmail(email, token, session.user.name || 'Admin', role, session.user.email || undefined);
         revalidatePath('/admin/users');
         return { success: true, message: 'Invitation sent' };
     } catch (error) {

@@ -31,8 +31,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MoreHorizontal, Shield, Trash2, Coins } from 'lucide-react';
-import { updateUserRole, updateUserCredits, deleteUser } from '@/app/actions/admin';
+import { MoreHorizontal, Shield, Trash2, Coins, Key, Copy, Check } from 'lucide-react';
+import { updateUserRole, updateUserCredits, deleteUser, adminResetUserPassword } from '@/app/actions/admin';
 import { toast } from 'sonner';
 
 interface UserActionsProps {
@@ -50,12 +50,22 @@ export function UserActions({ user }: UserActionsProps) {
     // Dialog States
     const [showRoleDialog, setShowRoleDialog] = useState(false);
     const [showCreditsDialog, setShowCreditsDialog] = useState(false);
+    const [showPasswordDialog, setShowPasswordDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [loading, setLoading] = useState(false);
 
     // Form States
     const [selectedRole, setSelectedRole] = useState(user.role);
     const [creditAmount, setCreditAmount] = useState(user.credits);
+    const [newPassword, setNewPassword] = useState('');
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyId = () => {
+        navigator.clipboard.writeText(user.id);
+        setCopied(true);
+        toast.success('User ID copied to clipboard');
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const handleUpdateRole = async () => {
         setLoading(true);
@@ -85,6 +95,26 @@ export function UserActions({ user }: UserActionsProps) {
         }
     };
 
+    const handleResetPassword = async () => {
+        if (newPassword.length < 8) {
+            toast.error('Password must be at least 8 characters');
+            return;
+        }
+
+        setLoading(true);
+        const result = await adminResetUserPassword(user.id, newPassword);
+        setLoading(false);
+
+        if (result.success) {
+            toast.success('Password reset successfully');
+            setShowPasswordDialog(false);
+            setNewPassword('');
+            setOpenMenu(false);
+        } else {
+            toast.error(result.error);
+        }
+    };
+
     const handleDeleteUser = async () => {
         setLoading(true);
         const result = await deleteUser(user.id);
@@ -108,8 +138,13 @@ export function UserActions({ user }: UserActionsProps) {
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleCopyId}>
+                        {copied ? <Check className="mr-2 h-4 w-4 text-green-500" /> : <Copy className="mr-2 h-4 w-4" />}
+                        Copy User ID
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setShowRoleDialog(true)}>
                         <Shield className="mr-2 h-4 w-4" />
                         Edit Role
@@ -118,8 +153,12 @@ export function UserActions({ user }: UserActionsProps) {
                         <Coins className="mr-2 h-4 w-4" />
                         Manage Credits
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowPasswordDialog(true)}>
+                        <Key className="mr-2 h-4 w-4" />
+                        Reset Password
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
+                    <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50">
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete User
                     </DropdownMenuItem>
@@ -155,6 +194,35 @@ export function UserActions({ user }: UserActionsProps) {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowRoleDialog(false)}>Cancel</Button>
                         <Button onClick={handleUpdateRole} disabled={loading}>Save Changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Password Reset Dialog */}
+            <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reset User Password</DialogTitle>
+                        <DialogDescription>
+                            Enter a new password for {user.name || 'this user'}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="password" className="text-right">New Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="col-span-3"
+                                placeholder="Enter min 8 characters"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>Cancel</Button>
+                        <Button onClick={handleResetPassword} disabled={loading}>Reset Password</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

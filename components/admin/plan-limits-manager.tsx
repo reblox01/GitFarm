@@ -95,48 +95,50 @@ export function PlanLimitsManager() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {data?.allFeatures.map((feature: any) => (
-                                    <TableRow key={feature.id}>
-                                        <TableCell className="font-medium">
-                                            <div>{feature.name}</div>
-                                            <div className="text-xs text-muted-foreground">{feature.key}</div>
-                                        </TableCell>
-                                        {data.plans.map((plan: any) => {
-                                            const planFeature = plan.features.find((f: any) => f.featureId === feature.id);
-                                            const isEnabled = !!planFeature;
-                                            const isSaving = saving === `${plan.id}-${feature.id}`;
+                                {data?.allFeatures
+                                    .filter((feature: any) => feature.key !== 'commit_limit')
+                                    .map((feature: any) => (
+                                        <TableRow key={feature.id}>
+                                            <TableCell className="font-medium">
+                                                <div>{feature.name}</div>
+                                                <div className="text-xs text-muted-foreground">{feature.key}</div>
+                                            </TableCell>
+                                            {data.plans.map((plan: any) => {
+                                                const planFeature = plan.features.find((f: any) => f.featureId === feature.id);
+                                                const isEnabled = !!planFeature;
+                                                const isSaving = saving === `${plan.id}-${feature.id}`;
 
-                                            return (
-                                                <TableCell key={plan.id} className="text-center">
-                                                    <div className="flex flex-col items-center gap-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <Switch
-                                                                checked={isEnabled}
-                                                                onCheckedChange={(val) => handleFeatureToggle(plan.id, feature.id, val)}
-                                                                disabled={isSaving}
-                                                            />
-                                                            {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
-                                                        </div>
-
-                                                        {isEnabled && (
-                                                            <div className="flex flex-col gap-1 w-24">
-                                                                <Label className="text-[10px] text-muted-foreground uppercase">Limit</Label>
-                                                                <Input
-                                                                    type="number"
-                                                                    placeholder="∞"
-                                                                    className="h-7 text-xs text-center"
-                                                                    defaultValue={planFeature.limitValue ?? ''}
-                                                                    onBlur={(e) => handleLimitChange(plan.id, feature.id, e.target.value)}
+                                                return (
+                                                    <TableCell key={plan.id} className="text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <Switch
+                                                                    checked={isEnabled}
+                                                                    onCheckedChange={(val) => handleFeatureToggle(plan.id, feature.id, val)}
                                                                     disabled={isSaving}
                                                                 />
+                                                                {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            );
-                                        })}
-                                    </TableRow>
-                                ))}
+
+                                                            {isEnabled && (
+                                                                <div className="flex flex-col gap-1 w-24">
+                                                                    <Label className="text-[10px] text-muted-foreground uppercase">Limit</Label>
+                                                                    <Input
+                                                                        type="number"
+                                                                        placeholder="∞"
+                                                                        className="h-7 text-xs text-center"
+                                                                        defaultValue={planFeature.limitValue ?? ''}
+                                                                        onBlur={(e) => handleLimitChange(plan.id, feature.id, e.target.value)}
+                                                                        disabled={isSaving}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                );
+                                            })}
+                                        </TableRow>
+                                    ))}
                             </TableBody>
                         </Table>
                     </div>

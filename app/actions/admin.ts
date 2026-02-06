@@ -198,3 +198,27 @@ export async function updateUserCredits(userId: string, credits: number) {
         return { error: error.message };
     }
 }
+
+export async function adminResetUserPassword(userId: string, password: string) {
+    await checkAdmin();
+
+    const validated = z.object({
+        userId: z.string().cuid(),
+        password: z.string().min(8),
+    }).parse({ userId, password });
+
+    try {
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = await bcrypt.hash(validated.password, 10);
+
+        await prisma.user.update({
+            where: { id: validated.userId },
+            data: { password: hashedPassword }
+        });
+
+        revalidatePath('/admin/users');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}

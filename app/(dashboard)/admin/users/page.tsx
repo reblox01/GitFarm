@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Coins } from 'lucide-react';
 import { InviteUserDialog } from './invite-user-dialog';
 import { RevokeButton } from './revoke-button';
 
@@ -101,8 +102,9 @@ export default async function AdminUsersPage() {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-mono">{user.credits}</span>
+                                            <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-500">
+                                                <Coins className="size-4" />
+                                                <span className="font-mono font-medium">{user.credits}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>{user.createdAt.toLocaleDateString()}</TableCell>

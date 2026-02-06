@@ -210,11 +210,19 @@ enum TaskDistribution {
   EQUAL
 }
 
+enum LogStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  RUNNING
+}
+
 model TaskLog {
   id              String    @id @default(cuid())
   taskId          String
   status          LogStatus
   message         String?
+  details         Json? // Array of step objects: { step: string, status: 'pending'|'running'|'done'|'error', timestamp: string }
   commitsCount    Int       @default(0)
   creditsDeducted Int       @default(0)
   repository      String?
@@ -225,11 +233,6 @@ model TaskLog {
 
   @@index([taskId])
   @@index([timestamp])
-}
-
-enum LogStatus {
-  SUCCESS
-  FAILED
 }
 
 model CommitJob {

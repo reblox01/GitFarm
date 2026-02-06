@@ -163,7 +163,7 @@ export default async function TaskDetailsPage(props: { params: Promise<{ id: str
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <TaskLogsList logs={task.logs as any} />
+                            <TaskLogsList taskId={task.id} initialLogs={task.logs as any} />
                         </CardContent>
                     </Card>
                 </div>

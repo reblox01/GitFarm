@@ -10,6 +10,7 @@
         "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
         "@prisma/adapter-pg": "^7.3.0",
         "@prisma/client": "^7.3.0",
+        "@radix-ui/react-collapsible": "^1.1.12",
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.36.2",
         "bcrypt": "^6.0.0",

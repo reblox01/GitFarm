@@ -17,14 +17,42 @@ export async function runDueTasks() {
         }
     });
 
+
     console.log(`🔍 Found ${tasks.length} active tasks.`);
 
     for (const task of tasks) {
+        const isDue = isTaskDue(task.schedule);
+        console.log(`👉 Checking Task: ${task.name} (${task.id}) | Schedule: "${task.schedule}" | Due: ${isDue}`);
+
+        if (!isDue) {
+            continue;
+        }
+
         try {
             await executeTask(task);
         } catch (error) {
             console.error(`❌ Error executing task ${task.id}:`, error);
         }
+    }
+}
+
+function isTaskDue(schedule: string): boolean {
+    try {
+        const parts = schedule.split(' ');
+        if (parts.length < 2) return false;
+
+        const scheduledMinute = parseInt(parts[0]);
+        const scheduledHour = parseInt(parts[1]);
+
+        const now = new Date();
+        const currentMinute = now.getMinutes();
+        const currentHour = now.getHours();
+
+        // console.log(`   Debug Schedule: ${scheduledHour}:${scheduledMinute} vs Now: ${currentHour}:${currentMinute}`);
+
+        return scheduledMinute === currentMinute && scheduledHour === currentHour;
+    } catch (e) {
+        return false;
     }
 }
 
@@ -65,16 +93,32 @@ async function executeTask(task: any) {
     console.log(`🚀 Executing task "${task.name}" on ${targetRepos.length} target repositories.`);
 
     for (const repoConfig of targetRepos) {
+        // Create initial log entry for this repo
+        const log = await prisma.taskLog.create({
+            data: {
+                taskId: task.id,
+                status: 'RUNNING',
+                message: `Executing on ${repoConfig.fullName}`,
+                details: [],
+                repository: repoConfig.fullName
+            }
+        });
+
+        const logId = log.id;
+
         // Re-check user credits before EACH repo run in the batch
+        await logStep(logId, 'Checking user credits', 'running');
         const user = await prisma.user.findUnique({
             where: { id: task.userId },
             select: { credits: true }
         });
 
         if (!user || user.credits <= 0) {
-            await logTask(task.id, 'FAILED', `Stopped execution: Ran out of credits at ${repoConfig.fullName}`, 0, 0, repoConfig.fullName);
+            await logStep(logId, 'Checking user credits', 'error');
+            await updateLogStatus(logId, 'FAILED', 'Stopped execution: Ran out of credits');
             break;
         }
+        await logStep(logId, 'Checking user credits', 'done');
 
         // Re-check task limit
         const currentTask = await prisma.task.findUnique({
@@ -83,43 +127,51 @@ async function executeTask(task: any) {
         });
 
         if (currentTask && currentTask.creditLimit !== null && currentTask.creditsUsed >= currentTask.creditLimit) {
-            console.log(`⚠️ Task reached limit during batch execution at ${repoConfig.fullName}.`);
+            await updateLogStatus(logId, 'SUCCESS', 'Task reached credit limit during batch execution');
             break;
         }
 
         const commitsToRun = Math.min(repoConfig.commits || 1, user.credits);
-        console.log(`  - Pushing ${commitsToRun} commits to ${repoConfig.fullName}`);
 
+        await logStep(logId, `Preparing ${commitsToRun} commits`, 'running');
         // 5. Get Repo State
         const repoStateResult = await getRepoStateInternal(task.userId, repoConfig.fullName);
         if (repoStateResult.error) {
-            await logTask(task.id, 'FAILED', `Repo error: ${repoStateResult.error}`, 0, 0, repoConfig.fullName);
+            await logStep(logId, `Preparing ${commitsToRun} commits`, 'error');
+            await updateLogStatus(logId, 'FAILED', `Repo error: ${repoStateResult.error}`);
             continue;
         }
+        await logStep(logId, `Preparing ${commitsToRun} commits`, 'done');
 
         const { sha, branch } = repoStateResult;
 
         // 6. Create Commits
+        await logStep(logId, 'Generating commits', 'running');
         const commits = Array.from({ length: commitsToRun }).map((_, i) => ({
             date: new Date(Date.now() - (commitsToRun - 1 - i) * 1000).toISOString(),
             message: `chore: contribution update [bot]`,
-            parentSha: sha // createCommitBatchInternal handles sequential parenting
+            parentSha: sha
         }));
 
         const result = await createCommitBatchInternal(task.userId, repoConfig.fullName, commits);
 
         if (result.error) {
-            await logTask(task.id, 'FAILED', `Commit error: ${result.error}`, 0, 0, repoConfig.fullName);
+            await logStep(logId, 'Generating commits', 'error');
+            await updateLogStatus(logId, 'FAILED', `Commit error: ${result.error}`);
             continue;
         }
+        await logStep(logId, 'Generating commits', 'done');
 
         // 7. Push Changes
+        await logStep(logId, 'Pushing changes', 'running');
         const pushResult = await pushChangesInternal(task.userId, repoConfig.fullName, branch, result.lastSha);
 
         if (pushResult.error) {
-            await logTask(task.id, 'FAILED', `Push error: ${pushResult.error}`, 0, 0, repoConfig.fullName);
+            await logStep(logId, 'Pushing changes', 'error');
+            await updateLogStatus(logId, 'FAILED', `Push error: ${pushResult.error}`);
             continue;
         }
+        await logStep(logId, 'Pushing changes', 'done');
 
         // 8. Update Stats & Log Success for this repo
         await prisma.task.update({
@@ -129,11 +181,44 @@ async function executeTask(task: any) {
             }
         });
 
-        await logTask(task.id, 'SUCCESS', 'Executed successfully.', commitsToRun, commitsToRun, repoConfig.fullName);
+        await updateLogStatus(logId, 'SUCCESS', 'Executed successfully.', commitsToRun, commitsToRun);
     }
 }
 
-async function logTask(taskId: string, status: LogStatus, message: string, commits: number, credits: number, repo?: string) {
+async function logStep(logId: string, stepName: string, status: 'running' | 'done' | 'error') {
+    // We need to fetch current details first to append
+    const log = await prisma.taskLog.findUnique({ where: { id: logId }, select: { details: true } });
+    const currentDetails = (log?.details as any[]) || [];
+
+    // Check if step exists to update or push new
+    const existingIndex = currentDetails.findIndex((s: any) => s.step === stepName);
+    const timestamp = new Date().toISOString();
+
+    if (existingIndex >= 0) {
+        currentDetails[existingIndex] = { ...currentDetails[existingIndex], status, timestamp };
+    } else {
+        currentDetails.push({ step: stepName, status, timestamp });
+    }
+
+    await prisma.taskLog.update({
+        where: { id: logId },
+        data: { details: currentDetails }
+    });
+}
+
+async function updateLogStatus(logId: string, status: LogStatus, message: string, commits: number = 0, credits: number = 0) {
+    await prisma.taskLog.update({
+        where: { id: logId },
+        data: {
+            status,
+            message,
+            commitsCount: commits,
+            creditsDeducted: credits
+        }
+    });
+}
+
+async function logTask(taskId: string, status: LogStatus, message: string, commits: number = 0, credits: number = 0, repo?: string) {
     await prisma.taskLog.create({
         data: {
             taskId,
@@ -142,6 +227,7 @@ async function logTask(taskId: string, status: LogStatus, message: string, commi
             commitsCount: commits,
             creditsDeducted: credits,
             repository: repo,
+            details: []
         }
     });
 }

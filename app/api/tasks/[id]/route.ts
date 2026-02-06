@@ -15,6 +15,12 @@ export async function GET(
 
         const task = await prisma.task.findUnique({
             where: { id: params.id },
+            include: {
+                logs: {
+                    orderBy: { timestamp: 'desc' },
+                    take: 30
+                }
+            }
         });
 
         if (!task || task.userId !== session.user.id) {

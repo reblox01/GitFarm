@@ -30,7 +30,7 @@ export function PaymentDetailsDialog({ payment }: PaymentDetailsDialogProps) {
             <DialogTrigger asChild>
                 <Button variant="ghost" size="sm">Details</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-full max-h-[90vh] overflow-y-auto w-[95vw]">
+            <DialogContent className="sm:max-w-[40vw] max-w-[90vw] max-h-[90vh] overflow-y-auto w-full">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <CreditCard className="h-5 w-5 text-primary" />
@@ -43,7 +43,7 @@ export function PaymentDetailsDialog({ payment }: PaymentDetailsDialogProps) {
 
                 <div className="grid border rounded-lg overflow-hidden">
                     {/* Status Header */}
-                    <div className="bg-muted/50 mr-8 p-4 border-b flex items-center justify-between">
+                    <div className="bg-muted/50 p-4 border-b flex items-center justify-between">
                         <div className="space-y-0.5">
                             <p className="text-xs font-medium text-muted-foreground uppercase">Transaction Status</p>
                             <Badge variant={payment.status === 'COMPLETED' ? 'default' : 'secondary'} className={payment.status === 'COMPLETED' ? 'bg-green-600' : ''}>
@@ -78,7 +78,7 @@ export function PaymentDetailsDialog({ payment }: PaymentDetailsDialogProps) {
                         </div>
 
                         {/* Plan Info */}
-                        <div className="bg-background p-4 space-y-3 mr-8">
+                        <div className="bg-background p-4 space-y-3">
                             <h3 className="text-sm font-semibold flex items-center gap-2">
                                 <Info className="h-4 w-4" />
                                 Plan Details

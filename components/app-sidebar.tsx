@@ -93,15 +93,15 @@ const data = {
             title: "Payments",
             url: "/admin/payments",
             icon: CreditCard,
-        }
-    ],
-    projects: [
-        {
-            name: "GitFarm",
-            url: "#",
-            icon: Frame,
         },
     ],
+projects: [
+    {
+        name: "GitFarm",
+        url: "#",
+        icon: Frame,
+    },
+],
 }
 
 export function AppSidebar({ user, role, credits, planName, ...props }: React.ComponentProps<typeof Sidebar> & { user: any, role?: string, credits?: number, planName?: string }) {

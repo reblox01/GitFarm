@@ -1,101 +1,108 @@
-import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDistanceToNow } from 'date-fns';
-import { UserActions } from '@/components/admin/user-actions';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { InviteUserDialog } from './invite-user-dialog';
+import { RevokeButton } from './revoke-button';
 
 export default async function AdminUsersPage() {
     const session = await auth();
-
-    if (!session?.user?.id || (session.user as any).role !== 'ADMIN') {
-        redirect('/dashboard');
-    }
+    if (session?.user?.role !== 'ADMIN') redirect('/dashboard');
 
     const users = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
-        take: 50,
-        include: {
-            subscription: true,
-        }
+        select: { id: true, name: true, email: true, role: true, createdAt: true, emailVerified: true }
+    });
+
+    const invitations = await prisma.invitation.findMany({
+        orderBy: { createdAt: 'desc' },
     });
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Users</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Manage user accounts and permissions
-                    </p>
+                    <h2 className="text-3xl font-bold tracking-tight">Users & Invitations</h2>
+                    <p className="text-muted-foreground">Manage system users and team invitations.</p>
                 </div>
+                <InviteUserDialog />
             </div>
 
-            <div className="border rounded-md">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Credits</TableHead>
-                            <TableHead>Joined</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.map((user: any) => (
-                            <TableRow key={user.id}>
-                                <TableCell className="flex items-center gap-3">
-                                    <Avatar>
-                                        <AvatarImage src={user.avatarUrl || undefined} />
-                                        <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-medium text-sm">{user.name || 'Unnamed User'}</p>
-                                        <p className="text-[10px] text-muted-foreground">{user.email}</p>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={user.role === 'ADMIN' ? 'default' : 'outline'} className="text-[10px] uppercase font-bold tracking-wider">
-                                        {user.role}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={user.subscription?.status === 'ACTIVE' ? 'outline' : 'secondary'} className="text-[10px] uppercase font-bold tracking-wider">
-                                        {user.subscription?.status || 'FREE'}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-1.5 font-medium text-sm">
-                                        <span className="text-green-600">🪙</span>
-                                        {user.credits?.toLocaleString() || '0'}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                                    {formatDistanceToNow(user.createdAt, { addSuffix: true })}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <UserActions
-                                        userId={user.id}
-                                        currentRole={user.role}
-                                        userName={user.name || 'User'}
-                                        currentCredits={user.credits || 0}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card className="md:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Pending Invitations</CardTitle>
+                        <CardDescription>Invited users who haven't accepted yet.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {invitations.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No pending invitations.</p>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Expires</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {invitations.map((invite) => (
+                                        <TableRow key={invite.id}>
+                                            <TableCell>{invite.email}</TableCell>
+                                            <TableCell><Badge variant="outline">{invite.role}</Badge></TableCell>
+                                            <TableCell>{invite.expires.toLocaleDateString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                <RevokeButton id={invite.id} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="md:col-span-2">
+                    <CardHeader>
+                        <CardTitle>All Users</CardTitle>
+                        <CardDescription>List of registered users.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Joined</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {users.map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell><Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
+                                        <TableCell>
+                                            {user.emailVerified ? (
+                                                <Badge className="bg-green-500 hover:bg-green-600">Verified</Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="text-yellow-600 border-yellow-600">Unverified</Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>{user.createdAt.toLocaleDateString()}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

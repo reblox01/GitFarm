@@ -256,3 +256,15 @@ enum PaymentStatus {
   FAILED
   REFUNDED
 }
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  role      Role     @default(USER)
+  token     String   @unique
+  expires   DateTime
+  inviterId String
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}

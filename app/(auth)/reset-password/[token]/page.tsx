@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,8 @@ import { resetPassword } from '@/app/actions/auth-reset';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function ResetPasswordPage({ params }: { params: { token: string } }) {
+export default function ResetPasswordPage({ params }: { params: Promise<{ token: string }> }) {
+    const { token } = use(params);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
@@ -20,7 +21,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
         setLoading(true);
 
         const formData = new FormData(e.currentTarget);
-        const result = await resetPassword(params.token, formData);
+        const result = await resetPassword(token, formData);
 
         setLoading(false);
 

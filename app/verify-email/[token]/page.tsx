@@ -5,8 +5,9 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-export default async function VerifyEmailPage({ params }: { params: { token: string } }) {
-    const result = await verifyEmail(params.token);
+export default async function VerifyEmailPage({ params }: { params: Promise<{ token: string }> }) {
+    const { token } = await params;
+    const result = await verifyEmail(token);
 
     if (result.success) {
         return (

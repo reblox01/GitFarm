@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { checkRateLimit, apiLimiter } from '@/lib/rate-limit';
 
 export async function GET() {
     try {
@@ -8,6 +9,12 @@ export async function GET() {
 
         if (!session?.user?.id) {
             return NextResponse.json({ connected: false, username: null });
+        }
+
+        // Rate limiting (per user)
+        const { success } = await checkRateLimit(apiLimiter, session.user.id);
+        if (!success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         const account = await prisma.account.findFirst({

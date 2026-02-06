@@ -97,6 +97,15 @@ export const authConfig: NextAuthConfig = {
     session: {
         strategy: 'jwt',
     },
+    cookies: {
+        sessionToken: {
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+            },
+        },
+    },
     events: {
         async linkAccount({ user, account, profile }) {
             console.log('Account linked:', { userId: user.id, provider: account.provider });

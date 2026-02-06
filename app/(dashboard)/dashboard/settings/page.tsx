@@ -17,6 +17,11 @@ export default async function SettingsPage() {
             name: true,
             email: true,
             credits: true,
+            subscription: {
+                include: {
+                    plan: true,
+                }
+            }
         }
     });
 
@@ -36,7 +41,9 @@ export default async function SettingsPage() {
                 name: user.name || '',
                 email: user.email || '',
                 credits: user.credits,
-            }} />
+            }}
+                subscription={user.subscription as any}
+            />
         </div>
     );
 }

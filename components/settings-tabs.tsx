@@ -18,9 +18,22 @@ interface SettingsTabsProps {
         email: string;
         credits: number;
     };
+    subscription?: {
+        status: string;
+        currentPeriodEnd: Date | null;
+        plan: {
+            name: string;
+            price: number;
+            type: string;
+        };
+    } | null;
 }
 
-export function SettingsTabs({ user }: SettingsTabsProps) {
+import { cancelSubscription } from '@/app/actions/billing';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+
+export function SettingsTabs({ user, subscription }: SettingsTabsProps) {
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab');
     const [defaultTab, setDefaultTab] = useState('profile');
@@ -62,13 +75,43 @@ export function SettingsTabs({ user }: SettingsTabsProps) {
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="font-medium">Free Plan</p>
+                                <p className="font-medium text-lg">{subscription ? subscription.plan.name : 'Free Plan'}</p>
                                 <p className="text-sm text-muted-foreground">
-                                    Limited features
+                                    {subscription
+                                        ? `${subscription.plan.type === 'MONTHLY' ? 'Billed monthly' : 'One-time purchase'} • Renews ${subscription.currentPeriodEnd ? format(new Date(subscription.currentPeriodEnd), 'PP') : 'Never'}`
+                                        : 'Upgrade to unlock premium features'}
                                 </p>
                             </div>
-                            <Badge>Active</Badge>
+                            <Badge variant={subscription?.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                                {subscription?.status || 'Free'}
+                            </Badge>
                         </div>
+
+                        {subscription?.status === 'ACTIVE' && (
+                            <div className="flex justify-end pt-4">
+                                <Button
+                                    variant="outline"
+                                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                    onClick={async () => {
+                                        if (confirm('Are you sure you want to cancel your subscription?')) {
+                                            const res = await cancelSubscription();
+                                            if (res.success) toast.success(res.message);
+                                            else toast.error(res.error);
+                                        }
+                                    }}
+                                >
+                                    Cancel Subscription
+                                </Button>
+                            </div>
+                        )}
+
+                        {!subscription && (
+                            <div className="flex justify-end pt-4">
+                                <Button asChild>
+                                    <a href="/dashboard/plans">Upgrade Plan</a>
+                                </Button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

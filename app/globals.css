@@ -122,4 +122,41 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Premium Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(from var(--muted-foreground) l c h / 0.2) !important;
+    border-radius: 10px !important;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(from var(--muted-foreground) l c h / 0.4) !important;
+  }
+
+  /* Firefox support */
+  * {
+    scrollbar-width: thin !important;
+    scrollbar-color: oklch(from var(--muted-foreground) l c h / 0.2) transparent !important;
+  }
+}
+
+@utility hide-on-short {
+  @media (max-height: 750px) {
+    display: none;
+  }
+}
+
+@utility show-on-short {
+  @media (min-height: 751px) {
+    display: none;
+  }
 }

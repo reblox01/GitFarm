@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
-import { NewTaskForm } from '@/components/tasks/new-task-form';
+import { TaskForm } from '@/components/tasks/task-form';
 
 export default async function NewTaskPage() {
     const session = await auth();
@@ -35,5 +35,5 @@ export default async function NewTaskPage() {
         redirect('/dashboard/tasks');
     }
 
-    return <NewTaskForm />;
+    return <TaskForm />;
 }

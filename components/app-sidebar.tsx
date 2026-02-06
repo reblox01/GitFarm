@@ -95,13 +95,13 @@ const data = {
             icon: CreditCard,
         },
     ],
-projects: [
-    {
-        name: "GitFarm",
-        url: "#",
-        icon: Frame,
-    },
-],
+    projects: [
+        {
+            name: "GitFarm",
+            url: "#",
+            icon: Frame,
+        },
+    ],
 }
 
 export function AppSidebar({ user, role, credits, planName, ...props }: React.ComponentProps<typeof Sidebar> & { user: any, role?: string, credits?: number, planName?: string }) {
@@ -124,7 +124,13 @@ export function AppSidebar({ user, role, credits, planName, ...props }: React.Co
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">GitFarm</span>
-                                    <span className="truncate text-xs">{planName || 'Free'}</span>
+                                    <div className="flex items-center gap-2 truncate">
+                                        <span className="text-xs">{planName || 'Free'}</span>
+                                        {/* <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 text-[10px] font-bold border border-yellow-500/20">
+                                            <Coins className="size-2" />
+                                            {credits?.toLocaleString() || 0}
+                                        </div> */}
+                                    </div>
                                 </div>
                             </a>
                         </SidebarMenuButton>
@@ -167,7 +173,7 @@ export function AppSidebar({ user, role, credits, planName, ...props }: React.Co
                 )}
             </SidebarContent>
             <SidebarFooter>
-                <div className="px-3 py-2">
+                <div className="px-3 py-2 hide-on-short">
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton size="lg" className="bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-500 border border-green-500/20 group" asChild>
@@ -186,11 +192,14 @@ export function AppSidebar({ user, role, credits, planName, ...props }: React.Co
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </div>
-                <NavUser user={{
-                    name: user?.name || data.user.name,
-                    email: user?.email || data.user.email,
-                    avatar: user?.image || data.user.avatar,
-                }} />
+                <NavUser
+                    user={{
+                        name: user?.name || data.user.name,
+                        email: user?.email || data.user.email,
+                        avatar: user?.image || data.user.avatar,
+                    }}
+                    credits={credits}
+                />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

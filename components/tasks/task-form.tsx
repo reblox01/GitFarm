@@ -22,17 +22,52 @@ interface Repository {
     defaultBranch: string;
 }
 
-export function NewTaskForm() {
+interface TaskFormProps {
+    initialData?: {
+        id?: string;
+        name: string;
+        repositories: { fullName: string }[];
+        distribution: 'RANDOM' | 'EQUAL';
+        schedule: string;
+        creditLimit: number | null;
+    };
+    isEditing?: boolean;
+}
+
+interface SelectedRepo {
+    fullName: string;
+    commits: number;
+}
+
+export function TaskForm({ initialData, isEditing = false }: TaskFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [fetchingRepos, setFetchingRepos] = useState(true);
     const [repositories, setRepositories] = useState<Repository[]>([]);
-    const [selectedRepos, setSelectedRepos] = useState<string[]>([]);
-    const [taskName, setTaskName] = useState('');
-    const [scheduleTime, setScheduleTime] = useState('09:00');
-    const [schedule, setSchedule] = useState('0 9 * * *'); // Default: Daily at 9 AM
-    const [distribution, setDistribution] = useState<'RANDOM' | 'EQUAL'>('RANDOM');
-    const [creditLimit, setCreditLimit] = useState<string>('');
+
+    const [taskName, setTaskName] = useState(initialData?.name || '');
+    const [selectedRepos, setSelectedRepos] = useState<SelectedRepo[]>(
+        initialData?.repositories.map((r: any) => ({
+            fullName: r.fullName,
+            commits: r.commits || 1
+        })) || []
+    );
+    const [distribution, setDistribution] = useState<'RANDOM' | 'EQUAL'>(
+        initialData?.distribution || 'RANDOM'
+    );
+    const [creditLimit, setCreditLimit] = useState<string>(
+        initialData?.creditLimit?.toString() || ''
+    );
+
+    // Extract HH:mm from cron (simplistic: assuming MM HH * * *)
+    const initialTime = initialData?.schedule ?
+        (() => {
+            const parts = initialData.schedule.split(' ');
+            return `${parts[1].padStart(2, '0')}:${parts[0].padStart(2, '0')}`;
+        })() : '09:00';
+
+    const [scheduleTime, setScheduleTime] = useState(initialTime);
+    const [schedule, setSchedule] = useState(initialData?.schedule || '0 9 * * *');
 
     useEffect(() => {
         async function fetchRepositories() {
@@ -69,12 +104,18 @@ export function NewTaskForm() {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/tasks', {
-                method: 'POST',
+            const url = isEditing ? `/api/tasks/${initialData?.id}` : '/api/tasks';
+            const method = isEditing ? 'PATCH' : 'POST';
+
+            const response = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: taskName,
-                    repositories: selectedRepos.map(fullName => ({ fullName })),
+                    repositories: selectedRepos.map(r => ({
+                        fullName: r.fullName,
+                        commits: r.commits
+                    })),
                     distribution,
                     schedule,
                     creditLimit: creditLimit ? parseInt(creditLimit) : null,
@@ -83,21 +124,28 @@ export function NewTaskForm() {
             });
 
             if (response.ok) {
-                toast.success('Task created successfully');
+                toast.success(isEditing ? 'Task updated successfully' : 'Task created successfully');
                 router.push('/dashboard/tasks');
+                router.refresh();
             } else {
                 const data = await response.json();
-                toast.error('Failed to create task', {
+                toast.error(isEditing ? 'Failed to update task' : 'Failed to create task', {
                     description: data.error || 'Please try again',
                 });
             }
         } catch (error) {
-            console.error('Task creation error:', error);
-            toast.error('Failed to create task');
+            console.error('Task form error:', error);
+            toast.error('An unexpected error occurred');
         } finally {
             setLoading(false);
         }
     }
+
+    const updateRepoCommits = (fullName: string, commits: number) => {
+        setSelectedRepos(prev => prev.map(r =>
+            r.fullName === fullName ? { ...r, commits: Math.max(1, commits) } : r
+        ));
+    };
 
     return (
         <div className="space-y-6">
@@ -109,9 +157,9 @@ export function NewTaskForm() {
                     </Button>
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-bold">Create New Task</h1>
+                    <h1 className="text-3xl font-bold">{isEditing ? 'Edit Task' : 'Create New Task'}</h1>
                     <p className="text-muted-foreground mt-2">
-                        Schedule automated commits to a repository
+                        {isEditing ? 'Modify your automated commit task' : 'Schedule automated commits to your repositories'}
                     </p>
                 </div>
             </div>
@@ -120,7 +168,7 @@ export function NewTaskForm() {
                 <CardHeader>
                     <CardTitle>Task Configuration</CardTitle>
                     <CardDescription>
-                        Configure your automated commit task
+                        Configure your contribution patterns and target repositories
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -139,19 +187,35 @@ export function NewTaskForm() {
                         <div className="space-y-4">
                             <Label>Repositories</Label>
 
-                            {/* Selected Repositories List */}
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {selectedRepos.map(fullName => (
-                                    <Badge key={fullName} variant="secondary" className="pl-3 pr-1 py-1 flex items-center gap-2">
-                                        {fullName}
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedRepos(prev => prev.filter(r => r !== fullName))}
-                                            className="ml-1 hover:bg-muted rounded-full p-0.5"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </Badge>
+                            <div className="space-y-3 mb-4">
+                                {selectedRepos.map(repo => (
+                                    <div key={repo.fullName} className="flex items-center justify-between p-3 rounded-lg border bg-primary/5 border-primary/10">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="secondary" className="pl-3 pr-1 py-1 flex items-center gap-2">
+                                                {repo.fullName}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRepos(prev => prev.filter(r => r.fullName !== repo.fullName))}
+                                                    className="ml-1 hover:bg-destructive/10 hover:text-destructive rounded-full p-0.5 transition-colors"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </Badge>
+                                        </div>
+
+                                        {distribution === 'EQUAL' && (
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-xs text-muted-foreground">Commits:</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={repo.commits}
+                                                    onChange={(e) => updateRepoCommits(repo.fullName, parseInt(e.target.value) || 1)}
+                                                    className="w-20 h-8 text-center"
+                                                    min="1"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 ))}
                                 {selectedRepos.length === 0 && !fetchingRepos && (
                                     <p className="text-sm text-muted-foreground italic px-2 py-1">No repositories selected yet.</p>
@@ -160,79 +224,71 @@ export function NewTaskForm() {
 
                             <div className="space-y-2">
                                 {fetchingRepos ? (
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 border rounded-md">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 border rounded-md bg-muted/20">
+                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                                         Loading repositories...
                                     </div>
                                 ) : repositories.length === 0 ? (
-                                    <div className="p-4 border rounded-md bg-muted/50">
-                                        <p className="text-sm text-muted-foreground mb-2">
-                                            No repositories found. Please connect your GitHub account first.
+                                    <div className="p-4 border border-dashed rounded-md bg-muted/10">
+                                        <p className="text-sm text-muted-foreground mb-3 text-center">
+                                            No repositories found.
                                         </p>
-                                        <Link href="/dashboard/settings">
-                                            <Button variant="outline" size="sm">
-                                                Go to Settings
-                                            </Button>
-                                        </Link>
+                                        <div className="flex justify-center">
+                                            <Link href="/dashboard/settings">
+                                                <Button variant="outline" size="sm">
+                                                    Connect GitHub Account
+                                                </Button>
+                                            </Link>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="grid gap-2">
                                         <Select
                                             value=""
                                             onValueChange={(val) => {
-                                                if (val && !selectedRepos.includes(val)) {
-                                                    setSelectedRepos(prev => [...prev, val]);
+                                                if (val && !selectedRepos.find(r => r.fullName === val)) {
+                                                    setSelectedRepos(prev => [...prev, { fullName: val, commits: 1 }]);
                                                 }
                                             }}
                                         >
-                                            <SelectTrigger>
+                                            <SelectTrigger className="w-full">
                                                 <SelectValue placeholder="Add a repository..." />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {repositories
-                                                    .filter(repo => !selectedRepos.includes(repo.fullName))
+                                                    .filter(repo => !selectedRepos.find(r => r.fullName === repo.fullName))
                                                     .map((repo: any) => (
                                                         <SelectItem key={repo.id} value={repo.fullName}>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-medium">{repo.fullName}</span>
                                                                 {repo.private && (
-                                                                    <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                                                                    <Badge variant="outline" className="text-[10px] bg-muted/50">
                                                                         Private
-                                                                    </span>
+                                                                    </Badge>
                                                                 )}
                                                             </div>
                                                         </SelectItem>
                                                     ))}
                                             </SelectContent>
                                         </Select>
-                                        <p className="text-xs text-muted-foreground">
-                                            You can add multiple repositories. Commits will be distributed among them.
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Tip: You can add multiple repositories to rotate your commits.
                                         </p>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="distribution">Commit Distribution</Label>
+                                <Label htmlFor="distribution">Distribution</Label>
                                 <Select value={distribution} onValueChange={(val: any) => setDistribution(val)}>
-                                    <SelectTrigger id="distribution">
+                                    <SelectTrigger id="distribution" className="w-full">
                                         <SelectValue placeholder="Select distribution" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="RANDOM">
-                                            <div className="flex flex-col">
-                                                <span>Random</span>
-                                                <span className="text-xs text-muted-foreground">Picks a random repo from your list each time</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="EQUAL">
-                                            <div className="flex flex-col">
-                                                <span>Equal (Round Robin)</span>
-                                                <span className="text-xs text-muted-foreground">Balances commits evenly across all repos</span>
-                                            </div>
-                                        </SelectItem>
+                                        <SelectItem value="RANDOM">Random Rotation</SelectItem>
+                                        <SelectItem value="EQUAL">Even Coverage (Round Robin)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -240,54 +296,38 @@ export function NewTaskForm() {
                             <div className="space-y-2">
                                 <Label htmlFor="creditLimit" className="flex items-center gap-2">
                                     <Coins className="h-4 w-4 text-yellow-500" />
-                                    Credit Limit ("Stop When...")
+                                    Credit Limit
                                 </Label>
                                 <Input
                                     id="creditLimit"
                                     type="number"
-                                    placeholder="e.g. 500 (Optional)"
+                                    placeholder="No limit"
                                     value={creditLimit}
                                     onChange={(e) => setCreditLimit(e.target.value)}
                                     min="1"
                                 />
-                                <p className="text-xs text-muted-foreground">
-                                    Task will automatically deactivate once it uses this many credits. Leave empty for no limit.
-                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="time">Schedule Time</Label>
+                                <Input
+                                    id="time"
+                                    type="time"
+                                    value={scheduleTime}
+                                    onChange={(e) => {
+                                        setScheduleTime(e.target.value);
+                                        const [hours, minutes] = e.target.value.split(':');
+                                        setSchedule(`${parseInt(minutes)} ${parseInt(hours)} * * *`);
+                                    }}
+                                    required
+                                />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="time">Schedule Time (Daily)</Label>
-                            <Input
-                                id="time"
-                                type="time"
-                                value={scheduleTime}
-                                onChange={(e) => {
-                                    setScheduleTime(e.target.value);
-                                    // Convert to cron: MM HH * * *
-                                    const [hours, minutes] = e.target.value.split(':');
-                                    setSchedule(`${minutes} ${hours} * * *`);
-                                }}
-                                required
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Task will run daily at this time.
-                            </p>
-                            <div className="text-xs text-muted-foreground mt-1">
-                                Cron Expression: <span className="font-mono bg-muted px-1 rounded">{schedule}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-2 pt-4">
-                            <Button type="submit" disabled={loading || fetchingRepos}>
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    'Create Task'
-                                )}
+                        <div className="flex items-center gap-3 pt-4 pt-6 border-t">
+                            <Button type="submit" disabled={loading || fetchingRepos} className="px-8">
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isEditing ? 'Save Changes' : 'Create Task'}
                             </Button>
                             <Link href="/dashboard/tasks">
                                 <Button type="button" variant="outline">

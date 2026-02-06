@@ -7,6 +7,7 @@ import {
     CreditCard,
     LogOut,
     Sparkles,
+    Coins,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -34,12 +35,14 @@ import {
 
 export function NavUser({
     user,
+    credits,
 }: {
     user: {
         name: string
         email: string
         avatar: string
-    }
+    },
+    credits?: number
 }) {
     const { isMobile } = useSidebar()
 
@@ -58,7 +61,13 @@ export function NavUser({
                             </Avatar>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-semibold">{user.name}</span>
-                                <span className="truncate text-xs">{user.email}</span>
+                                <div className="flex items-center gap-1.5 truncate">
+                                    <span className="truncate text-xs opacity-70">{user.email}</span>
+                                    <div className="flex items-center gap-1 text-[10px] show-on-short text-yellow-600 dark:text-yellow-500 font-bold">
+                                        <Coins className="size-2.5" />
+                                        {credits?.toLocaleString() || 0}
+                                    </div>
+                                </div>
                             </div>
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
@@ -77,7 +86,13 @@ export function NavUser({
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">{user.name}</span>
-                                    <span className="truncate text-xs">{user.email}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 text-[10px] font-bold border border-yellow-500/20">
+                                            <Coins className="size-2" />
+                                            {credits?.toLocaleString() || 0}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </DropdownMenuLabel>

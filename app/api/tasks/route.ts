@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { name, repository, schedule, pattern } = body;
+        const { name, repositories, schedule, pattern, distribution, creditLimit } = body;
 
-        if (!name || !repository || !schedule) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!name || !repositories || !Array.isArray(repositories) || repositories.length === 0 || !schedule) {
+            return NextResponse.json({ error: 'Missing required fields or invalid repositories' }, { status: 400 });
         }
 
         // Create the task
@@ -22,9 +22,11 @@ export async function POST(request: NextRequest) {
             data: {
                 userId: session.user.id,
                 name,
-                repository,
+                repositories,
+                distribution: distribution || 'RANDOM',
                 schedule,
                 pattern: pattern || {},
+                creditLimit: creditLimit ? parseInt(creditLimit) : null,
                 active: true,
             },
         });

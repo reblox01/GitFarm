@@ -184,20 +184,52 @@ model SiteSettings {
 // ========================
 
 model Task {
-  id         String   @id @default(cuid())
-  userId     String
-  name       String
-  repository String? // GitHub repository full name (owner/repo)
-  schedule   String // cron expression
-  pattern    Json // contribution pattern data
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String           @id @default(cuid())
+  userId       String
+  name         String
+  // repositories Format: [{ fullName: string, weight?: number }]
+  repositories Json
+  distribution TaskDistribution @default(RANDOM)
+  schedule     String // cron expression
+  pattern      Json // contribution pattern data
+  active       Boolean          @default(true)
+  creditLimit  Int? // null = no limit ("stop when...")
+  creditsUsed  Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs TaskLog[]
 
   @@index([userId])
+}
+
+enum TaskDistribution {
+  RANDOM
+  EQUAL
+}
+
+model TaskLog {
+  id              String    @id @default(cuid())
+  taskId          String
+  status          LogStatus
+  message         String?
+  commitsCount    Int       @default(0)
+  creditsDeducted Int       @default(0)
+  repository      String?
+  timestamp       DateTime  @default(now())
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([timestamp])
+}
+
+enum LogStatus {
+  SUCCESS
+  FAILED
 }
 
 model CommitJob {

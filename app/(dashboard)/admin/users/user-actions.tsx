@@ -31,7 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MoreHorizontal, Shield, Trash2, Coins, Key, Copy, Check } from 'lucide-react';
+import { MoreHorizontal, Shield, Trash2, Coins, Key, Copy, Check, CreditCard } from 'lucide-react';
 import { updateUserRole, updateUserCredits, deleteUser, adminResetUserPassword } from '@/app/actions/admin';
 import { toast } from 'sonner';
 
@@ -39,6 +39,7 @@ interface UserActionsProps {
     user: {
         id: string;
         name: string | null;
+        email: string;
         role: 'USER' | 'ADMIN';
         credits: number;
     };
@@ -156,6 +157,13 @@ export function UserActions({ user }: UserActionsProps) {
                     <DropdownMenuItem onClick={() => setShowPasswordDialog(true)}>
                         <Key className="mr-2 h-4 w-4" />
                         Reset Password
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <a href={`/admin/payments?search=${encodeURIComponent(user.email)}`}>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            View Payments
+                        </a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50">

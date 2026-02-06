@@ -13,33 +13,76 @@ interface PlansListProps {
 }
 
 export function PlansList({ plans, subscription }: PlansListProps) {
-    // Logic:
-    // 1. If user has ACTIVE PAID subscription (price > 0), they cannot subscribe to ANY other plan (Free or Paid) without cancelling first.
-    // 2. If user is on Free (or no active paid sub), they can subscribe to Paid.
-
-    const isPaidActive = subscription?.status === 'ACTIVE' && subscription.plan.price > 0;
+    // A user is "Pro" if they have or had any paid plan
+    const isPro = subscription && subscription.plan.price > 0;
     const currentPlanId = subscription?.planId;
+    const isMonthlyActive = isPro && subscription.plan.type === 'MONTHLY' && subscription.status === 'ACTIVE';
 
     const handleDisabledClick = () => {
-        toast.error("You must cancel your current active subscription before switching plans.");
+        toast.error("You must cancel your active monthly subscription before switching plans.");
     };
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
             {plans.map((plan: any) => {
-                const isCurrentPlan = currentPlanId === plan.id || (!isPaidActive && plan.isDefault && !currentPlanId);
+                const isCurrentPlan = currentPlanId === plan.id;
+                const isMonthly = plan.type === 'MONTHLY';
                 const isFree = plan.price === 0 || plan.isDefault;
 
-                // Disable if:
-                // - Already on this plan (Current)
-                // - Has paid active subscription AND this is a different plan
-                const isDisabled = isCurrentPlan || isPaidActive;
+                // Recommendation: Monthly plans are always recommended
+                const isRecommended = isMonthly;
+
+                // Disable logic:
+                // 1. If user is Pro, the "Free" plan is completely disabled/non-selectable
+                // 2. If user has an ACTIVE MONTHLY sub, they can't switch/recharge other things without cancelling first (standard sub logic)
+                // 3. One-time plans are NEVER "disabled" if they are the current plan (they become "Recharge")
+
+                let buttonLabel = 'Get Started';
+                let isDisabled = false;
+                let showCheckout = true;
+
+                if (isFree) {
+                    if (isPro) {
+                        buttonLabel = 'Free Forever (Pro Member)';
+                        isDisabled = true;
+                        showCheckout = false;
+                    } else if (isCurrentPlan || !currentPlanId) {
+                        buttonLabel = 'Current Plan';
+                        isDisabled = true;
+                        showCheckout = false;
+                    }
+                } else {
+                    if (isMonthly) {
+                        if (isCurrentPlan && isMonthlyActive) {
+                            buttonLabel = 'Current Plan';
+                            isDisabled = true;
+                            showCheckout = false;
+                        } else if (isMonthlyActive && !isCurrentPlan) {
+                            // Already have another monthly sub active
+                            isDisabled = true;
+                            showCheckout = false;
+                        }
+                    } else {
+                        // One-time plan
+                        if (isCurrentPlan) {
+                            buttonLabel = 'Recharge Credits';
+                        } else if (isMonthlyActive) {
+                            // Can't buy one-time while monthly is active? 
+                            // User didn't specify, but usually you can buy top-ups.
+                            // However, current logic blocks switching.
+                            // Let's allow one-time purchase as top-up even if monthly is active?
+                            // Actually, many systems allow "Addons". 
+                            // User said: "always in that even if credits end he still marked as pro"
+                            buttonLabel = 'Upgrade';
+                        }
+                    }
+                }
 
                 return (
-                    <Card key={plan.id} className={`relative flex flex-col ${plan.isDefault ? 'border-primary shadow-lg scale-105 z-10' : 'border-border'}`}>
-                        {plan.isDefault && (
+                    <Card key={plan.id} className={`relative flex flex-col transition-all duration-300 ${isRecommended ? 'border-primary shadow-lg scale-105 z-10' : 'border-border hover:border-muted-foreground/50'}`}>
+                        {isRecommended && (
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                                <Badge className="bg-primary text-primary-foreground px-3 py-1">
+                                <Badge className="bg-primary text-primary-foreground px-3 py-1 animate-pulse">
                                     Recommended
                                 </Badge>
                             </div>
@@ -84,16 +127,12 @@ export function PlansList({ plans, subscription }: PlansListProps) {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            {isCurrentPlan ? (
-                                <Button className="w-full" variant="outline" disabled>
-                                    Current Plan
-                                </Button>
-                            ) : isDisabled ? (
-                                <Button className="w-full" variant="secondary" onClick={handleDisabledClick}>
-                                    Switch Plan
+                            {!showCheckout ? (
+                                <Button className="w-full" variant={isCurrentPlan ? "outline" : "secondary"} disabled={isDisabled} onClick={isDisabled && !isCurrentPlan ? handleDisabledClick : undefined}>
+                                    {buttonLabel}
                                 </Button>
                             ) : (
-                                <PlanCheckoutButton planId={plan.id} price={plan.price} />
+                                <PlanCheckoutButton planId={plan.id} price={plan.price} label={buttonLabel} />
                             )}
                         </CardFooter>
                     </Card>

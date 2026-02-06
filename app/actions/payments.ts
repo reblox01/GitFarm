@@ -18,6 +18,7 @@ export async function getPaymentTransactions(filters: PaymentFilters = {}) {
     try {
         const session = await auth();
         if (!session?.user?.id || session.user.role !== 'ADMIN') {
+            console.log(`[PAYMENTS_DEBUG] UNAUTHORIZED: user=${session?.user?.email}, role=${session?.user?.role}`);
             return { error: 'Unauthorized' };
         }
 
@@ -70,6 +71,8 @@ export async function getPaymentTransactions(filters: PaymentFilters = {}) {
 
         // Get total count for pagination
         const total = await prisma.paymentTransaction.count({ where });
+
+        console.log(`[PAYMENTS_DEBUG] Found ${transactions.length} transactions out of ${total} total`);
 
         return {
             success: true,
@@ -145,5 +148,34 @@ export async function getPaymentStats() {
     } catch (error) {
         console.error('Failed to fetch payment stats:', error);
         return { error: 'Failed to fetch payment statistics' };
+    }
+}
+
+export async function getUserPayments() {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { error: 'Unauthorized' };
+        }
+
+        const transactions = await prisma.paymentTransaction.findMany({
+            where: { userId: session.user.id },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                plan: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        return {
+            success: true,
+            data: transactions,
+        };
+    } catch (error) {
+        console.error('Failed to fetch user payments:', error);
+        return { error: 'Failed to fetch payment history' };
     }
 }

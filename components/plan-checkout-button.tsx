@@ -9,9 +9,10 @@ import { toast } from 'sonner';
 interface PlanCheckoutButtonProps {
     planId: string;
     price: number;
+    label?: string;
 }
 
-export function PlanCheckoutButton({ planId, price }: PlanCheckoutButtonProps) {
+export function PlanCheckoutButton({ planId, price, label }: PlanCheckoutButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleCheckout = async () => {
@@ -42,7 +43,7 @@ export function PlanCheckoutButton({ planId, price }: PlanCheckoutButtonProps) {
                 </>
             ) : (
                 <>
-                    {price > 0 ? 'Get Started' : 'Current Plan'}
+                    {label || (price > 0 ? 'Get Started' : 'Current Plan')}
                     <ArrowRight className="ml-2 h-4 w-4" />
                 </>
             )}

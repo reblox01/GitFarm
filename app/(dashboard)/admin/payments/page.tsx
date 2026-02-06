@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { getPaymentTransactions, getPaymentStats } from '@/app/actions/payments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { DollarSign, TrendingUp, CreditCard, Activity, Search, Download } from 'lucide-react';
+import { PaymentDetailsDialog } from '@/components/payment-details-dialog';
 
 export default async function PaymentsPage({
     searchParams,
@@ -23,7 +25,7 @@ export default async function PaymentsPage({
     searchParams: { page?: string; search?: string }
 }) {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user || session.user.role?.toUpperCase() !== 'ADMIN') {
         redirect('/');
     }
 
@@ -43,6 +45,15 @@ export default async function PaymentsPage({
     const transactions = transactionsResult.success ? transactionsResult.data : [];
     const stats = statsResult.success ? statsResult.data : null;
     const pagination = transactionsResult.success ? transactionsResult.pagination : null;
+
+    // Diagnostic information
+    const diagnostic = {
+        success: transactionsResult.success,
+        count: transactions.length,
+        total: pagination?.total,
+        error: (transactionsResult as any).error || (statsResult as any).error,
+        userRole: session.user.role
+    };
 
     const formatCurrency = (amount: number, currency: string = 'usd') => {
         return new Intl.NumberFormat('en-US', {
@@ -67,7 +78,7 @@ export default async function PaymentsPage({
             </div>
 
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -119,6 +130,11 @@ export default async function PaymentsPage({
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Recent Transactions</CardTitle>
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="text-[10px] font-mono opacity-50 ml-4">
+                                Diagnostic: {JSON.stringify(diagnostic)}
+                            </div>
+                        )}
                         <div className="flex items-center space-x-2">
                             <form className="flex items-center space-x-2">
                                 <div className="relative">
@@ -189,11 +205,11 @@ export default async function PaymentsPage({
                                         <TableCell>
                                             {format(new Date(tx.createdAt), 'MMM d, yyyy')}
                                             <p className="text-xs text-muted-foreground">
-                                                {format(new Date(tx.createdAt), 'h:mm a')}
+                                                {format(new Date(tx.createdAt), 'HH:mm')}
                                             </p>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm">Details</Button>
+                                            <PaymentDetailsDialog payment={tx} />
                                         </TableCell>
                                     </TableRow>
                                 ))

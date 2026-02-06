@@ -8,13 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { InviteUserDialog } from './invite-user-dialog';
 import { RevokeButton } from './revoke-button';
 
+import { UserActions } from './user-actions';
+
 export default async function AdminUsersPage() {
     const session = await auth();
     if (session?.user?.role !== 'ADMIN') redirect('/dashboard');
 
     const users = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
-        select: { id: true, name: true, email: true, role: true, createdAt: true, emailVerified: true }
+        select: { id: true, name: true, email: true, role: true, createdAt: true, emailVerified: true, credits: true }
     });
 
     const invitations = await prisma.invitation.findMany({
@@ -80,7 +82,9 @@ export default async function AdminUsersPage() {
                                     <TableHead>Email</TableHead>
                                     <TableHead>Role</TableHead>
                                     <TableHead>Status</TableHead>
+                                    <TableHead>Credits</TableHead>
                                     <TableHead>Joined</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -96,7 +100,15 @@ export default async function AdminUsersPage() {
                                                 <Badge variant="outline" className="text-yellow-600 border-yellow-600">Unverified</Badge>
                                             )}
                                         </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-mono">{user.credits}</span>
+                                            </div>
+                                        </TableCell>
                                         <TableCell>{user.createdAt.toLocaleDateString()}</TableCell>
+                                        <TableCell className="text-right">
+                                            <UserActions user={user} />
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

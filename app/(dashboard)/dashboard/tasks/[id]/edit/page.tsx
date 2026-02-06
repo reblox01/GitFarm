@@ -3,7 +3,8 @@ import { prisma } from '@/lib/db';
 import { redirect, notFound } from 'next/navigation';
 import { TaskForm } from '@/components/tasks/task-form';
 
-export default async function EditTaskPage({ params }: { params: { id: string } }) {
+export default async function EditTaskPage(props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     const session = await auth();
 
     if (!session?.user?.id) {

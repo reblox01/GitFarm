@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { TaskLogsList } from '@/components/tasks/task-logs-list';
 import { format } from 'date-fns';
 
-export default async function TaskDetailsPage({ params }: { params: { id: string } }) {
+export default async function TaskDetailsPage(props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     const session = await auth();
 
     if (!session?.user?.id) {

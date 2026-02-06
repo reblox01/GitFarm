@@ -5,35 +5,47 @@ import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export async function cancelSubscription() {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return { error: 'Unauthorized' };
-    }
+    // ... existed code ...
+}
 
+export async function checkAndGrantMonthlyCredits(userId: string) {
     try {
-        const subscription = await prisma.userSubscription.findUnique({
-            where: { userId: session.user.id },
-        });
-
-        if (!subscription || subscription.status !== 'ACTIVE') {
-            return { error: 'No active subscription found' };
-        }
-
-        // In a real app, you would call Stripe/LemonSqueezy API here to cancel.
-        // For now, we just update the local DB.
-
-        await prisma.userSubscription.update({
-            where: { id: subscription.id },
-            data: {
-                status: 'CANCELED',
-                // currentPeriodEnd matches what Stripe usually sends
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                subscription: {
+                    include: {
+                        plan: true
+                    }
+                }
             }
         });
 
-        revalidatePath('/dashboard/settings');
-        return { success: true, message: 'Subscription canceled. It will remain active until the end of the period.' };
+        if (!user || !user.subscription || user.subscription.plan.type !== 'MONTHLY') {
+            return { success: false, reason: 'No monthly plan' };
+        }
+
+        const plan = user.subscription.plan;
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        // Check if we should grant credits
+        // Case 1: Never granted before
+        // Case 2: Last grant was > 30 days ago
+        if (!user.lastCreditGrant || user.lastCreditGrant < thirtyDaysAgo) {
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    credits: plan.credits, // Set to monthly allowance
+                    lastCreditGrant: now
+                }
+            });
+            return { success: true, granted: plan.credits };
+        }
+
+        return { success: false, reason: 'Already granted recently' };
     } catch (error) {
-        console.error('Cancel subscription error:', error);
-        return { error: 'Failed to cancel subscription' };
+        console.error('Credit refill error:', error);
+        return { error: 'Failed to refill credits' };
     }
 }

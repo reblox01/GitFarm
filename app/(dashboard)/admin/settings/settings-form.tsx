@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 
 interface SettingsFormProps {
     settings: {
+        appName: string;
+        supportEmail: string;
         freeCreditsOnVerify: number;
         requireEmailVerify: boolean;
     };
@@ -37,6 +39,29 @@ export function SettingsForm({ settings }: SettingsFormProps) {
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="appName">Site Name</Label>
+                    <Input
+                        id="appName"
+                        name="appName"
+                        defaultValue={settings.appName}
+                        placeholder="GitFarm"
+                        className="max-w-xs"
+                    />
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="supportEmail">Support Email</Label>
+                    <Input
+                        id="supportEmail"
+                        name="supportEmail"
+                        type="email"
+                        defaultValue={settings.supportEmail}
+                        placeholder="support@gitfarm.com"
+                        className="max-w-xs"
+                    />
+                </div>
+
                 <div className="grid gap-2">
                     <Label htmlFor="freeCreditsOnVerify">Free Credits on Verification</Label>
                     <p className="text-sm text-muted-foreground">

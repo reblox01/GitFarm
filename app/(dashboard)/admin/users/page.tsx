@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Coins } from 'lucide-react';
 import { InviteUserDialog } from './invite-user-dialog';
 import { RevokeButton } from './revoke-button';
+import { CollapsibleInvitations } from './collapsible-invitations';
 
 import { UserActions } from './user-actions';
 
@@ -35,40 +36,34 @@ export default async function AdminUsersPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-                <Card className="md:col-span-2">
-                    <CardHeader>
-                        <CardTitle>Pending Invitations</CardTitle>
-                        <CardDescription>Invited users who haven't accepted yet.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {invitations.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No pending invitations.</p>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Role</TableHead>
-                                        <TableHead>Expires</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                <CollapsibleInvitations count={invitations.length}>
+                    {invitations.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No pending invitations.</p>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead>Expires</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {invitations.map((invite) => (
+                                    <TableRow key={invite.id}>
+                                        <TableCell>{invite.email}</TableCell>
+                                        <TableCell><Badge variant="outline">{invite.role}</Badge></TableCell>
+                                        <TableCell>{invite.expires.toLocaleDateString()}</TableCell>
+                                        <TableCell className="text-right">
+                                            <RevokeButton id={invite.id} />
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {invitations.map((invite) => (
-                                        <TableRow key={invite.id}>
-                                            <TableCell>{invite.email}</TableCell>
-                                            <TableCell><Badge variant="outline">{invite.role}</Badge></TableCell>
-                                            <TableCell>{invite.expires.toLocaleDateString()}</TableCell>
-                                            <TableCell className="text-right">
-                                                <RevokeButton id={invite.id} />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CollapsibleInvitations>
 
                 <Card className="md:col-span-2">
                     <CardHeader>

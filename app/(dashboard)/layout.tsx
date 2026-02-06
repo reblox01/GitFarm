@@ -16,6 +16,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { checkAndGrantMonthlyCredits } from '@/app/actions/billing';
 
 export default async function DashboardLayout({
     children,
@@ -28,57 +29,38 @@ export default async function DashboardLayout({
         redirect('/login');
     }
 
-    let user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: {
-            credits: true,
-            subscription: {
-                select: {
-                    plan: {
-                        select: { name: true }
-                    }
-                }
-            }
-        }
+    // 1. Ensure user has a subscription (Free Plan by default)
+    let userSub = await prisma.userSubscription.findUnique({
+        where: { userId: session.user.id },
+        include: { plan: true }
     });
 
-    if (!user?.subscription) {
+    if (!userSub) {
         const defaultPlan = await prisma.plan.findFirst({
             where: { isDefault: true }
         });
 
         if (defaultPlan) {
-            await prisma.userSubscription.create({
+            userSub = await prisma.userSubscription.create({
                 data: {
                     userId: session.user.id,
                     planId: defaultPlan.id,
                     status: 'ACTIVE',
                     provider: 'STRIPE',
-                }
-            });
-
-            if (user?.credits === 0) {
-                await prisma.user.update({
-                    where: { id: session.user.id },
-                    data: { credits: defaultPlan.credits }
-                });
-            }
-
-            user = await prisma.user.findUnique({
-                where: { id: session.user.id },
-                select: {
-                    credits: true,
-                    subscription: {
-                        select: {
-                            plan: {
-                                select: { name: true }
-                            }
-                        }
-                    }
-                }
+                },
+                include: { plan: true }
             });
         }
     }
+
+    // 2. Check and refill monthly credits
+    await checkAndGrantMonthlyCredits(session.user.id);
+
+    // 3. Fetch final user state for the sidebar
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { credits: true }
+    });
 
     return (
         <SidebarProvider>
@@ -86,7 +68,7 @@ export default async function DashboardLayout({
                 user={session.user}
                 role={(session.user as any).role}
                 credits={user?.credits || 0}
-                planName={user?.subscription?.plan?.name || 'Free'}
+                planName={userSub?.plan?.name || 'Free'}
             />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">

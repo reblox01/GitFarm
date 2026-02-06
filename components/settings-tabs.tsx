@@ -30,6 +30,8 @@ interface SettingsTabsProps {
 }
 
 import { cancelSubscription } from '@/app/actions/billing';
+import { deleteAccount } from '@/app/actions/user';
+import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -58,6 +60,30 @@ export function SettingsTabs({ user, subscription }: SettingsTabsProps) {
                     email: user.email,
                 }} />
                 <PasswordForm />
+
+                <Card className="border-red-200 dark:border-red-900/50">
+                    <CardHeader>
+                        <CardTitle className="text-red-500">Danger Zone</CardTitle>
+                        <CardDescription>
+                            Permanently delete your account and all your data. This action cannot be undone.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="destructive" onClick={async () => {
+                            if (confirm('Are you absolutely sure you want to delete your account? This will remove all your credits, tasks, and history.')) {
+                                const res = await deleteAccount();
+                                if (res.success) {
+                                    toast.success('Account deleted successfully');
+                                    await signOut({ callbackUrl: '/' });
+                                } else {
+                                    toast.error(res.error || 'Failed to delete account');
+                                }
+                            }
+                        }}>
+                            Delete My Account
+                        </Button>
+                    </CardContent>
+                </Card>
             </TabsContent>
 
             <TabsContent value="integrations" className="space-y-4">
@@ -94,7 +120,7 @@ export function SettingsTabs({ user, subscription }: SettingsTabsProps) {
                                     className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                                     onClick={async () => {
                                         if (confirm('Are you sure you want to cancel your subscription?')) {
-                                            const res = await cancelSubscription();
+                                            const res = await cancelSubscription() as any;
                                             if (res.success) toast.success(res.message);
                                             else toast.error(res.error);
                                         }

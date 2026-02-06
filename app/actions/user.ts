@@ -92,3 +92,24 @@ export async function changePassword(formData: FormData) {
         return { error: 'Failed to change password' };
     }
 }
+
+export async function deleteAccount() {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+
+    try {
+        await prisma.user.delete({
+            where: { id: session.user.id },
+        });
+
+        // The user is deleted from DB. 
+        // Note: NextAuth session will eventually expire or we should sign out on client.
+        return { success: true };
+    } catch (error) {
+        console.error('Account deletion error:', error);
+        return { error: 'Failed to delete account. Please try again.' };
+    }
+}

@@ -39,8 +39,14 @@ export async function inviteUser(formData: FormData) {
                 data: { token, expires, role, createdAt: new Date() }
             });
 
-            await sendInvitationEmail(email, token, session.user.name || 'Admin', role, session.user.email || undefined);
+            const emailResult = await sendInvitationEmail(email, token, session.user.name || 'Admin', role, session.user.email || undefined);
+
             revalidatePath('/admin/users');
+
+            if (!emailResult.success) {
+                return { error: 'Invitation renewed but email failed to resend.' };
+            }
+
             return { success: true, message: 'Invitation resent' };
         }
 
@@ -57,8 +63,17 @@ export async function inviteUser(formData: FormData) {
             },
         });
 
-        await sendInvitationEmail(email, token, session.user.name || 'Admin', role, session.user.email || undefined);
+        const emailResult = await sendInvitationEmail(email, token, session.user.name || 'Admin', role, session.user.email || undefined);
+
         revalidatePath('/admin/users');
+
+        if (!emailResult.success) {
+            console.error('Email sending failed:', emailResult.error);
+            // Optionally: keep the invitation in DB but warn the user? 
+            // Usually best to tell them sending failed.
+            return { error: 'Invitation created (visible in list) but email failed to send. Please check your email configuration.' };
+        }
+
         return { success: true, message: 'Invitation sent' };
     } catch (error) {
         console.error('Invite error:', error);

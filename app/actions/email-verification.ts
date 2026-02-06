@@ -26,15 +26,18 @@ export async function verifyEmail(token: string) {
             return { error: 'Email already verified' };
         }
 
-        // Get site settings for free credits amount
-        const settings = await prisma.siteSettings.findFirst();
-        const freeCredits = settings?.freeCreditsOnVerify || 100;
+        // Get default plan for free credits amount
+        const defaultPlan = await prisma.plan.findFirst({
+            where: { isDefault: true }
+        });
+        const freeCredits = defaultPlan?.credits || 200; // User requested 200 as fallback
 
         // Mark email as verified and award free credits
         await prisma.user.update({
             where: { id: user.id },
             data: {
                 emailVerified: new Date(),
+                lastCreditGrant: new Date(),
                 verificationToken: null, // Clear token after use
                 credits: {
                     increment: freeCredits,

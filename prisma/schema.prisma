@@ -24,6 +24,7 @@ model User {
   credits           Int       @default(0)
   stripeCustomerId  String?   @unique
   emailVerified     DateTime? // null = not verified
+  lastCreditGrant   DateTime?
   verificationToken String?   @unique
   resetToken        String?   @unique
   resetTokenExpires DateTime?
@@ -169,6 +170,8 @@ enum SubscriptionStatus {
 
 model SiteSettings {
   id                  String          @id @default(cuid())
+  appName             String          @default("GitFarm")
+  supportEmail        String          @default("support@gitfarm.com")
   paymentProvider     PaymentProvider @default(STRIPE)
   freeCreditsOnVerify Int             @default(100) // Credits given on email verification
   requireEmailVerify  Boolean         @default(true)

@@ -13,6 +13,8 @@ export async function getSettings() {
     if (!settings) {
         settings = await prisma.siteSettings.create({
             data: {
+                appName: 'GitFarm',
+                supportEmail: 'support@gitfarm.com',
                 freeCreditsOnVerify: 100,
                 requireEmailVerify: true,
             }
@@ -30,6 +32,8 @@ export async function updateSettings(formData: FormData) {
 
     const freeCreditsOnVerify = parseInt(formData.get('freeCreditsOnVerify') as string) || 0;
     const requireEmailVerify = formData.get('requireEmailVerify') === 'on';
+    const appName = formData.get('appName') as string || 'GitFarm';
+    const supportEmail = formData.get('supportEmail') as string || 'support@gitfarm.com';
 
     try {
         const settings = await prisma.siteSettings.findFirst();
@@ -40,6 +44,8 @@ export async function updateSettings(formData: FormData) {
                 data: {
                     freeCreditsOnVerify,
                     requireEmailVerify,
+                    appName,
+                    supportEmail,
                 }
             });
         } else {
@@ -47,6 +53,8 @@ export async function updateSettings(formData: FormData) {
                 data: {
                     freeCreditsOnVerify,
                     requireEmailVerify,
+                    appName,
+                    supportEmail,
                 }
             });
         }

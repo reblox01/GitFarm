@@ -31,7 +31,14 @@ export default async function AdminPage() {
     ] = await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { createdAt: { lt: startOfCurrentMonth } } }),
-        prisma.userSubscription.count({ where: { status: 'ACTIVE' } }),
+        prisma.userSubscription.count({
+            where: {
+                status: 'ACTIVE',
+                plan: {
+                    price: { gt: 0 }
+                }
+            }
+        }),
         prisma.task.count({ where: { active: true } }),
         prisma.commitJob.aggregate({
             _sum: {

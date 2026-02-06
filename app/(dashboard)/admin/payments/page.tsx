@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { DollarSign, TrendingUp, CreditCard, Activity, Search, Download } from 'lucide-react';
 import { PaymentDetailsDialog } from '@/components/payment-details-dialog';
+import { ExportButton } from './export-button';
 
 export default async function PaymentsPage({
     searchParams,
@@ -71,10 +72,7 @@ export default async function PaymentsPage({
                         Monitor revenue and transaction history
                     </p>
                 </div>
-                <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
+                <ExportButton search={search} />
             </div>
 
             {/* Stats Cards */}

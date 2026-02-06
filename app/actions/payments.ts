@@ -89,6 +89,66 @@ export async function getPaymentTransactions(filters: PaymentFilters = {}) {
     }
 }
 
+export async function exportPaymentTransactions(filters: PaymentFilters = {}) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id || session.user.role !== 'ADMIN') {
+            return { error: 'Unauthorized' };
+        }
+
+        const { status, dateFrom, dateTo, search } = filters;
+
+        const where: any = {};
+
+        if (status && status.length > 0) {
+            where.status = { in: status };
+        }
+
+        if (dateFrom || dateTo) {
+            where.createdAt = {};
+            if (dateFrom) where.createdAt.gte = dateFrom;
+            if (dateTo) where.createdAt.lte = dateTo;
+        }
+
+        if (search) {
+            where.user = {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                ],
+            };
+        }
+
+        // Fetch all matching transactions for export (limit to 10000 or reasonable amount to avoid potential crash)
+        const transactions = await prisma.paymentTransaction.findMany({
+            where,
+            take: 10000,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                    },
+                },
+                plan: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        return {
+            success: true,
+            data: transactions,
+        };
+    } catch (error) {
+        console.error('Failed to export payments:', error);
+        return { error: 'Failed to export payments' };
+    }
+}
+
 export async function getPaymentStats() {
     try {
         const session = await auth();

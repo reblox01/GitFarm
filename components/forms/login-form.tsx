@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Github } from 'lucide-react';
+import { Github, Eye, EyeOff } from 'lucide-react';
 import { handleCredentialsSignIn, handleGithubSignIn } from '@/app/(auth)/actions';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export function LoginForm() {
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -45,65 +47,77 @@ export function LoginForm() {
     }
 
     return (
-        <Card className="border-2">
-            <CardHeader>
-                <CardTitle>Welcome Back</CardTitle>
-                <CardDescription>
-                    Sign in to your account to continue
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            placeholder="you@example.com"
-                            required
-                            disabled={loading}
-                        />
-                    </div>
-                    <div className="space-y-2">
+        <div className="grid gap-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="name@example.com"
+                        required
+                        disabled={loading}
+                        className="h-11 bg-muted/50 border-muted-foreground/20 focus:bg-background focus:border-green-500 transition-all font-medium"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
                         <Label htmlFor="password">Password</Label>
+                        <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-green-500 transition-colors">
+                            Forgot password?
+                        </Link>
+                    </div>
+                    <div className="relative">
                         <Input
                             id="password"
                             name="password"
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
                             required
                             disabled={loading}
+                            className="h-11 bg-muted/50 border-muted-foreground/20 focus:bg-background focus:border-green-500 transition-all font-medium pr-10"
                         />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? 'Signing in...' : 'Sign In'}
-                    </Button>
-                </form>
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <Separator />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
-                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                     </div>
                 </div>
+                <Button
+                    type="submit"
+                    className="w-full h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg shadow-green-500/20 transition-all hover:scale-[1.01] font-semibold"
+                    disabled={loading}
+                >
+                    {loading ? 'Signing in...' : 'Sign In'}
+                </Button>
+            </form>
 
-                <form action={handleGithubSignIn}>
-                    <Button
-                        type="submit"
-                        variant="outline"
-                        className="w-full"
-                        disabled={loading}
-                    >
-                        <Github className="mr-2 h-4 w-4" />
-                        GitHub
-                    </Button>
-                </form>
-            </CardContent>
-        </Card>
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                        Or continue with
+                    </span>
+                </div>
+            </div>
+
+            <form action={handleGithubSignIn}>
+                <Button
+                    type="submit"
+                    variant="outline"
+                    className="w-full h-11 border-muted-foreground/20 hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
+                    disabled={loading}
+                >
+                    <Github className="mr-2 h-4 w-4" />
+                    GitHub
+                </Button>
+            </form>
+        </div>
     );
 }

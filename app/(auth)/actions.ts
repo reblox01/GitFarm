@@ -8,6 +8,7 @@ import { AuthError } from 'next-auth';
 import { z } from 'zod';
 import { checkRateLimit, authLimiter } from '@/lib/rate-limit';
 import { headers } from 'next/headers';
+import { sendVerificationEmail } from '@/lib/email';
 
 
 const PasswordSchema = z.string()
@@ -97,22 +98,33 @@ export async function handleRegister(formData: FormData) {
             return { error: 'User already exists' };
         }
 
-        // Get the default plan if it exists
-        const defaultPlan = await prisma.plan.findFirst({
-            where: { isDefault: true }
-        });
+        // Get site settings for email verification requirement
+        const settings = await prisma.siteSettings.findFirst();
+        const requireVerification = settings?.requireEmailVerify !== false;
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user with default credits
+        // Generate verification token
+        const verificationToken = requireVerification
+            ? require('crypto').randomBytes(32).toString('hex')
+            : null;
+
+        // Create user with 0 credits if verification required
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
-                credits: defaultPlan?.credits || 0,
+                credits: requireVerification ? 0 : 100, // 0 credits until verified
+                emailVerified: requireVerification ? null : new Date(), // Auto-verify if not required
+                verificationToken,
             },
+        });
+
+        // Get the default plan if it exists
+        const defaultPlan = await prisma.plan.findFirst({
+            where: { isDefault: true }
         });
 
         // Create subscription if default plan exists
@@ -125,6 +137,15 @@ export async function handleRegister(formData: FormData) {
                     provider: 'STRIPE', // Local default
                 }
             });
+        }
+
+        // Send verification email if required
+        if (requireVerification && verificationToken) {
+            const emailResult = await sendVerificationEmail(user.email, verificationToken, user.name || 'User');
+            if (!emailResult.success) {
+                console.error('Failed to send verification email during registration:', emailResult.error);
+                // Note: We don't block registration, but this log will help debug API key issues
+            }
         }
 
         // Auto sign in after registration

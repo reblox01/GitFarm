@@ -14,17 +14,21 @@ datasource db {
 // ========================
 
 model User {
-  id               String   @id @default(cuid())
-  githubId         String?  @unique
-  email            String   @unique
-  password         String? // For email/password auth
-  name             String?
-  avatarUrl        String?
-  role             Role     @default(USER)
-  credits          Int      @default(0)
-  stripeCustomerId String?  @unique
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String    @id @default(cuid())
+  githubId          String?   @unique
+  email             String    @unique
+  password          String? // For email/password auth
+  name              String?
+  avatarUrl         String?
+  role              Role      @default(USER)
+  credits           Int       @default(0)
+  stripeCustomerId  String?   @unique
+  emailVerified     DateTime? // null = not verified
+  verificationToken String?   @unique
+  resetToken        String?   @unique
+  resetTokenExpires DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
   accounts     Account[]
@@ -32,6 +36,7 @@ model User {
   subscription UserSubscription?
   tasks        Task[]
   commitJobs   CommitJob[]
+  payments     PaymentTransaction[]
 
   @@index([githubId])
   @@index([email])
@@ -94,8 +99,9 @@ model Plan {
   updatedAt       DateTime @updatedAt
 
   // Relations
-  features      PlanFeature[]
-  subscriptions UserSubscription[]
+  features            PlanFeature[]
+  subscriptions       UserSubscription[]
+  paymentTransactions PaymentTransaction[]
 }
 
 enum PlanType {
@@ -162,10 +168,12 @@ enum SubscriptionStatus {
 // ========================
 
 model SiteSettings {
-  id              String          @id @default(cuid())
-  paymentProvider PaymentProvider @default(STRIPE)
-  config          Json? // Additional settings
-  updatedAt       DateTime        @updatedAt
+  id                  String          @id @default(cuid())
+  paymentProvider     PaymentProvider @default(STRIPE)
+  freeCreditsOnVerify Int             @default(100) // Credits given on email verification
+  requireEmailVerify  Boolean         @default(true)
+  config              Json? // Additional settings
+  updatedAt           DateTime        @updatedAt
 }
 
 // ========================
@@ -214,4 +222,37 @@ enum JobStatus {
   RUNNING
   COMPLETED
   FAILED
+}
+
+// ========================
+// Payments
+// ========================
+
+model PaymentTransaction {
+  id                String          @id @default(cuid())
+  userId            String
+  amount            Int // in cents
+  currency          String          @default("usd")
+  status            PaymentStatus   @default(PENDING)
+  provider          PaymentProvider @default(STRIPE)
+  providerPaymentId String? // Stripe payment intent ID or Lemon order ID
+  planId            String?
+  metadata          Json? // Additional payment details
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan? @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }

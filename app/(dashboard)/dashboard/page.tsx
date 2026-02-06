@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { CheckoutStatus } from '@/components/checkout-status';
 import { Suspense } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { VerificationBanner } from '@/components/verification-banner';
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -76,6 +77,11 @@ export default async function DashboardPage() {
                     Manage your GitHub contributions and automation tasks
                 </p>
             </div>
+
+            {/* Email Verification Banner */}
+            {!user?.emailVerified && (
+                <VerificationBanner userEmail={user?.email || ''} />
+            )}
 
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

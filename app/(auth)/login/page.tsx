@@ -11,26 +11,21 @@ export default async function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-            <div className="w-full max-w-md p-6">
-                <div className="mb-8 text-center">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-                        GitFarm
-                    </h1>
-                    <p className="text-slate-600 dark:text-slate-400">
-                        Manage your GitHub contributions
-                    </p>
-                </div>
-
-                <LoginForm />
-
-                <p className="text-center text-sm text-slate-500 mt-6">
-                    Don't have an account?{' '}
-                    <Link href="/register" className="text-green-600 hover:underline">
-                        Sign up
-                    </Link>
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+            <div className="flex flex-col space-y-2 text-center">
+                <h1 className="text-2xl font-semibold tracking-tight">
+                    Welcome back
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Enter your email to sign in to your account
                 </p>
             </div>
+            <LoginForm />
+            <p className="px-8 text-center text-sm text-muted-foreground">
+                <Link href="/register" className="hover:text-brand underline underline-offset-4">
+                    Don&apos;t have an account? Sign Up
+                </Link>
+            </p>
         </div>
     );
 }

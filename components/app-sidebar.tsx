@@ -43,7 +43,7 @@ const data = {
     user: {
         name: "User",
         email: "user@example.com",
-        avatar: "/avatars/shadcn.jpg",
+        avatar: "https://ui-avatars.com/api/?name=User&background=random",
     },
     navMain: [
         {
@@ -88,6 +88,11 @@ const data = {
             title: "Settings",
             url: "/admin/settings",
             icon: Settings,
+        },
+        {
+            title: "Payments",
+            url: "/admin/payments",
+            icon: CreditCard,
         }
     ],
     projects: [

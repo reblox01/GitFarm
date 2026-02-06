@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
                         status: 'ACTIVE',
                         providerSubscriptionId: session.subscription as string || null,
                         currentPeriodEnd: session.subscription
-                            ? new Date((session as any).expires_at * 1000) // This is not quite right for subscriptions, but okay for initial
+                            ? new Date((session as any).expires_at * 1000)
                             : null,
                     },
                     create: {
@@ -70,6 +70,22 @@ export async function POST(req: NextRequest) {
                         status: 'ACTIVE',
                         providerSubscriptionId: session.subscription as string || null,
                         provider: 'STRIPE',
+                    }
+                }),
+                // 3. Record payment transaction
+                prisma.paymentTransaction.create({
+                    data: {
+                        userId,
+                        amount: session.amount_total || 0,
+                        currency: session.currency || 'usd',
+                        status: 'COMPLETED',
+                        provider: 'STRIPE',
+                        providerPaymentId: session.payment_intent as string || session.id,
+                        planId: plan.id,
+                        metadata: {
+                            subscriptionId: typeof session.subscription === 'string' ? session.subscription : (session.subscription as Stripe.Subscription)?.id,
+                            invoiced: false, // One-time checkout or first subscription payment
+                        },
                     }
                 })
             ]);
@@ -91,12 +107,30 @@ export async function POST(req: NextRequest) {
             });
 
             if (subscription && subscription.plan && invoice.billing_reason === 'subscription_cycle') {
-                await prisma.user.update({
-                    where: { id: subscription.userId },
-                    data: {
-                        credits: { increment: subscription.plan.credits }
-                    }
-                });
+                await prisma.$transaction([
+                    prisma.user.update({
+                        where: { id: subscription.userId },
+                        data: {
+                            credits: { increment: subscription.plan.credits }
+                        }
+                    }),
+                    prisma.paymentTransaction.create({
+                        data: {
+                            userId: subscription.userId,
+                            amount: invoice.amount_paid,
+                            currency: invoice.currency || 'usd',
+                            status: 'COMPLETED',
+                            provider: 'STRIPE',
+                            providerPaymentId: invoice.payment_intent || invoice.id,
+                            planId: subscription.plan.id,
+                            metadata: {
+                                subscriptionId: subscriptionId,
+                                invoiceId: invoice.id,
+                                billingReason: invoice.billing_reason,
+                            },
+                        }
+                    })
+                ]);
                 console.log(`Granted monthly credits to user ${subscription.userId} for subscription ${subscriptionId}`);
             }
             break;

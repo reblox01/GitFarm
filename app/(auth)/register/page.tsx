@@ -11,26 +11,21 @@ export default async function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-            <div className="w-full max-w-md p-6">
-                <div className="mb-8 text-center">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-                        GitFarm
-                    </h1>
-                    <p className="text-slate-600 dark:text-slate-400">
-                        Manage your GitHub contributions
-                    </p>
-                </div>
-
-                <RegisterForm />
-
-                <p className="text-center text-sm text-slate-500 mt-6">
-                    Already have an account?{' '}
-                    <Link href="/login" className="text-green-600 hover:underline">
-                        Sign in
-                    </Link>
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+            <div className="flex flex-col space-y-2 text-center">
+                <h1 className="text-2xl font-semibold tracking-tight">
+                    Create an account
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Enter your email below to create your account
                 </p>
             </div>
+            <RegisterForm />
+            <p className="px-8 text-center text-sm text-muted-foreground">
+                <Link href="/login" className="hover:text-brand underline underline-offset-4">
+                    Already have an account? Sign In
+                </Link>
+            </p>
         </div>
     );
 }

@@ -18,13 +18,11 @@ export async function runDueTasks() {
     });
 
 
+
     console.log(`🔍 Found ${tasks.length} active tasks.`);
 
     for (const task of tasks) {
-        const isDue = isTaskDue(task.schedule);
-        console.log(`👉 Checking Task: ${task.name} (${task.id}) | Schedule: "${task.schedule}" | Due: ${isDue}`);
-
-        if (!isDue) {
+        if (!isTaskDue(task.schedule)) {
             continue;
         }
 
@@ -47,8 +45,6 @@ function isTaskDue(schedule: string): boolean {
         const now = new Date();
         const currentMinute = now.getMinutes();
         const currentHour = now.getHours();
-
-        // console.log(`   Debug Schedule: ${scheduledHour}:${scheduledMinute} vs Now: ${currentHour}:${currentMinute}`);
 
         return scheduledMinute === currentMinute && scheduledHour === currentHour;
     } catch (e) {

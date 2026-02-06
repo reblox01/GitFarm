@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { formatCronSchedule } from '@/lib/utils';
 import { redirect, notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, GitBranch, Coins, History, Calendar, Edit2, Play } from 'lucide-react';
@@ -79,7 +80,7 @@ export default async function TaskDetailsPage(props: { params: Promise<{ id: str
                                     <History className="h-4 w-4" />
                                     Schedule
                                 </span>
-                                <span className="text-sm font-medium">{task.schedule}</span>
+                                <span className="text-sm font-medium">{formatCronSchedule(task.schedule)}</span>
                             </div>
                             <div className="flex items-center justify-between py-2 border-b">
                                 <span className="text-sm text-muted-foreground flex items-center gap-2">

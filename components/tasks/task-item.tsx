@@ -1,5 +1,7 @@
 'use client';
 
+import { formatCronSchedule } from '@/lib/utils';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pause, Play, Trash2, Edit2, History, GitBranch, Coins, ArrowRight } from 'lucide-react';
@@ -54,6 +56,8 @@ export function TaskItem({ task }: TaskItemProps) {
         setLoading(false);
     }
 
+
+
     return (
         <Card className="overflow-hidden">
             <CardHeader className="pb-3">
@@ -67,7 +71,7 @@ export function TaskItem({ task }: TaskItemProps) {
                         </div>
                         <CardDescription className="flex items-center gap-1">
                             <History className="h-3 w-3" />
-                            Schedule: {task.schedule}
+                            Schedule: {formatCronSchedule(task.schedule)}
                         </CardDescription>
                     </div>
                     <div className="flex gap-2">

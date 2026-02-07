@@ -21,6 +21,7 @@ import {
     Settings,
     Coins,
     ArrowUpCircle,
+    GitBranch
 } from "lucide-react"
 import { usePathname } from 'next/navigation'
 
@@ -120,7 +121,7 @@ export function AppSidebar({ user, role, credits, planName, ...props }: React.Co
                         <SidebarMenuButton size="lg" asChild>
                             <a href="/dashboard">
                                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-green-600 text-sidebar-primary-foreground">
-                                    <Command className="size-4 text-white" />
+                                    <GitBranch className="size-4 text-white" />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">GitFarm</span>

@@ -82,14 +82,17 @@ export function LandingPage() {
             {/* Navigation */}
             <nav className="border-b bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
                 <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                        GitFarm
+                    <div className="relative z-20 flex items-center text-lg font-medium">
+                    <div className="flex aspect-square size-8 mr-2 items-center justify-center rounded-lg bg-green-600 text-sidebar-primary-foreground">
+                        <GitBranch className="size-4 text-white" />
                     </div>
+                    GitFarm
+                </div>
                     <div className="flex items-center gap-4">
                         <Link href="/login">
                             <Button variant="ghost">Sign In</Button>
                         </Link>
-                        <Link href="/login">
+                        <Link href="/signup">
                             <Button>Get Started</Button>
                         </Link>
                     </div>

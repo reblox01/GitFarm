@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Command } from "lucide-react"
+import { GitBranch } from "lucide-react"
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -11,8 +11,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 <div className="absolute top-0 z-0 h-full w-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
 
                 <div className="relative z-20 flex items-center text-lg font-medium">
-                    <div className="flex bg-green-600 rounded-lg p-1 mr-2">
-                        <Command className="h-5 w-5" />
+                    <div className="flex aspect-square size-8 mr-2 items-center justify-center rounded-lg bg-green-600 text-sidebar-primary-foreground">
+                        <GitBranch className="size-4 text-white" />
                     </div>
                     GitFarm
                 </div>

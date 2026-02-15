@@ -94,34 +94,34 @@ function LogItem({ log }: { log: TaskLog }) {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-4 mb-2">
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 <Badge variant={
                                     log.status === 'SUCCESS' ? "default" :
                                         log.status === 'FAILED' ? "destructive" :
                                             "secondary"
-                                } className={cn("h-5", log.status === 'RUNNING' && "animate-pulse")}>
+                                } className={cn("h-5 shrink-0", log.status === 'RUNNING' && "animate-pulse")}>
                                     {log.status === 'SUCCESS' ? 'Success' :
                                         log.status === 'FAILED' ? 'Failed' :
                                             log.status === 'RUNNING' ? 'Running' : 'Pending'}
                                 </Badge>
-                                <span className="text-xs text-muted-foreground font-mono">
+                                <span className="text-xs text-muted-foreground font-mono shrink-0">
                                     {format(new Date(log.timestamp), 'MMM d, h:mm a')}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-4 text-xs">
+                            <div className="flex items-center gap-3 text-xs flex-wrap">
                                 {log.repository && (
-                                    <div className="flex items-center gap-1 text-muted-foreground">
-                                        <GitBranch className="h-3 w-3" />
-                                        <span className="truncate max-w-[150px]">{log.repository.split('/')[1] || log.repository}</span>
+                                    <div className="flex items-center gap-1 text-muted-foreground min-w-0">
+                                        <GitBranch className="h-3 w-3 shrink-0" />
+                                        <span className="truncate max-w-[120px]">{log.repository.split('/')[1] || log.repository}</span>
                                     </div>
                                 )}
-                                <div className="flex items-center gap-1 text-muted-foreground">
+                                <div className="flex items-center gap-1 text-muted-foreground shrink-0">
                                     <Coins className="h-3 w-3" />
                                     <span>{log.creditsDeducted} credits</span>
                                 </div>
                                 {log.details && log.details.length > 0 && (
-                                    <div className="text-muted-foreground">
+                                    <div className="text-muted-foreground shrink-0">
                                         {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                     </div>
                                 )}
@@ -129,7 +129,7 @@ function LogItem({ log }: { log: TaskLog }) {
                         </div>
 
                         {log.message && (
-                            <p className="text-sm text-foreground/80 mb-1 leading-relaxed">
+                            <p className="text-sm text-foreground/80 mb-1 leading-relaxed break-words">
                                 {log.message}
                             </p>
                         )}

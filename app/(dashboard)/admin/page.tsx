@@ -133,23 +133,23 @@ export default async function AdminPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4">
+                <Card className="lg:col-span-4">
                     <CardHeader>
                         <CardTitle>Recent Signups</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
                             {recentUsers.length > 0 ? (recentUsers as any[]).map((user: any) => (
-                                <div key={user.id} className="flex items-center">
-                                    <Avatar className="h-9 w-9">
+                                <div key={user.id} className="flex items-center gap-4">
+                                    <Avatar className="h-9 w-9 shrink-0">
                                         <AvatarImage src={user.avatarUrl || ''} alt={user.name || ''} />
                                         <AvatarFallback>{(user.name || user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
-                                    <div className="ml-4 space-y-1">
-                                        <p className="text-sm font-medium leading-none">{user.name || 'Anonymous'}</p>
-                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                        <p className="text-sm font-medium leading-none truncate">{user.name || 'Anonymous'}</p>
+                                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                                     </div>
-                                    <div className="ml-auto font-medium text-xs text-muted-foreground">
+                                    <div className="shrink-0 font-medium text-xs text-muted-foreground">
                                         {formatDistanceToNow(user.createdAt, { addSuffix: true })}
                                     </div>
                                 </div>
@@ -159,19 +159,19 @@ export default async function AdminPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="col-span-3">
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Recent Activity</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
                             {recentActivity.length > 0 ? (recentActivity as any[]).map((job: any) => (
-                                <div key={job.id} className="flex items-start">
-                                    <div className={`mt-1 h-2 w-2 rounded-full ${job.status === 'COMPLETED' ? 'bg-green-500' :
+                                <div key={job.id} className="flex items-start gap-4">
+                                    <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${job.status === 'COMPLETED' ? 'bg-green-500' :
                                         job.status === 'FAILED' ? 'bg-red-500' : 'bg-blue-500'
                                         }`} />
-                                    <div className="ml-4 space-y-1">
-                                        <p className="text-sm font-medium leading-none">
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                        <p className="text-sm font-medium leading-none truncate">
                                             {job.user.name || job.user.email}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
@@ -181,7 +181,7 @@ export default async function AdminPage() {
                                             {formatDistanceToNow(job.createdAt, { addSuffix: true })}
                                         </p>
                                     </div>
-                                    <div className="ml-auto">
+                                    <div className="shrink-0">
                                         {job.status === 'COMPLETED' ? (
                                             <CheckCircle2 className="h-4 w-4 text-green-500" />
                                         ) : job.status === 'FAILED' ? (

@@ -64,7 +64,7 @@ export default async function PaymentsPage({
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0 w-full">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
@@ -124,15 +124,12 @@ export default async function PaymentsPage({
             </div>
 
             {/* Transactions Table */}
-            <Card>
+            <Card className="overflow-hidden">
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Recent Transactions</CardTitle>
-                        {process.env.NODE_ENV === 'development' && (
-                            <div className="text-[10px] font-mono opacity-50 ml-4">
-                                Diagnostic: {JSON.stringify(diagnostic)}
-                            </div>
-                        )}
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <CardTitle>Recent Transactions</CardTitle>
+                        </div>
                         <div className="flex items-center space-x-2">
                             <form className="flex items-center space-x-2">
                                 <div className="relative">
@@ -141,7 +138,7 @@ export default async function PaymentsPage({
                                         placeholder="Search user..."
                                         name="search"
                                         defaultValue={search}
-                                        className="pl-8 w-[250px]"
+                                        className="pl-8 w-full sm:w-[250px]"
                                     />
                                 </div>
                                 <Button type="submit" variant="secondary">Filter</Button>
@@ -150,70 +147,72 @@ export default async function PaymentsPage({
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>User</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Plan</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {transactions?.length === 0 ? (
+                    <div className="overflow-x-auto">
+                        <Table className="min-w-[800px]">
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                        No transactions found
-                                    </TableCell>
+                                    <TableHead>User</TableHead>
+                                    <TableHead>Amount</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Plan</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
-                            ) : (
-                                transactions?.map((tx) => (
-                                    <TableRow key={tx.id}>
-                                        <TableCell>
-                                            <div className="flex items-center space-x-3">
-                                                <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={tx.user.avatarUrl || ''} />
-                                                    <AvatarFallback>{tx.user.name?.[0] || 'U'}</AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium">{tx.user.name || 'Unknown'}</span>
-                                                    <span className="text-xs text-muted-foreground">{tx.user.email}</span>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-medium">
-                                            {formatCurrency(tx.amount, tx.currency)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={
-                                                tx.status === 'COMPLETED' ? 'default' :
-                                                    tx.status === 'PENDING' ? 'outline' :
-                                                        'destructive'
-                                            } className={
-                                                tx.status === 'COMPLETED' ? 'bg-green-600 hover:bg-green-700' : ''
-                                            }>
-                                                {tx.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {tx.plan?.name || 'Unknown Plan'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {format(new Date(tx.createdAt), 'MMM d, yyyy')}
-                                            <p className="text-xs text-muted-foreground">
-                                                {format(new Date(tx.createdAt), 'HH:mm')}
-                                            </p>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <PaymentDetailsDialog payment={tx} />
+                            </TableHeader>
+                            <TableBody>
+                                {transactions?.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                            No transactions found
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : (
+                                    transactions?.map((tx) => (
+                                        <TableRow key={tx.id}>
+                                            <TableCell>
+                                                <div className="flex items-center space-x-3 min-w-[180px]">
+                                                    <Avatar className="h-8 w-8 shrink-0">
+                                                        <AvatarImage src={tx.user.avatarUrl || ''} />
+                                                        <AvatarFallback>{tx.user.name?.[0] || 'U'}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="font-medium truncate">{tx.user.name || 'Unknown'}</span>
+                                                        <span className="text-xs text-muted-foreground truncate">{tx.user.email}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="font-medium whitespace-nowrap">
+                                                {formatCurrency(tx.amount, tx.currency)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={
+                                                    tx.status === 'COMPLETED' ? 'default' :
+                                                        tx.status === 'PENDING' ? 'outline' :
+                                                            'destructive'
+                                                } className={
+                                                    tx.status === 'COMPLETED' ? 'bg-green-600 hover:bg-green-700' : ''
+                                                }>
+                                                    {tx.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap">
+                                                {tx.plan?.name || 'Unknown Plan'}
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap">
+                                                {format(new Date(tx.createdAt), 'MMM d, yyyy')}
+                                                <p className="text-xs text-muted-foreground">
+                                                    {format(new Date(tx.createdAt), 'HH:mm')}
+                                                </p>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <PaymentDetailsDialog payment={tx} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

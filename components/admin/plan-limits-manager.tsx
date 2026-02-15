@@ -70,17 +70,17 @@ export function PlanLimitsManager() {
     }
 
     return (
-        <div className="space-y-6">
-            <Card>
+        <div className="space-y-6 min-w-0">
+            <Card className="overflow-hidden max-w-full">
                 <CardHeader>
                     <CardTitle>Plan Feature Limits</CardTitle>
                     <CardDescription>
                         Define feature access and usage limits for each subscription tier.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto">
-                        <Table>
+                <CardContent className="px-0">
+                    <div className="overflow-x-auto px-6">
+                        <Table className="min-w-[500px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[200px]">Feature</TableHead>

@@ -277,36 +277,38 @@ export function SettingsTabs({ user, subscription }: SettingsTabsProps) {
                             ) : !payments || payments.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground italic">No transactions found</div>
                             ) : (
-                                <div className="rounded-md border overflow-hidden">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b bg-muted/50">
-                                                <th className="px-4 py-3 text-left font-medium">Plan</th>
-                                                <th className="px-4 py-3 text-left font-medium">Amount</th>
-                                                <th className="px-4 py-3 text-left font-medium">Status</th>
-                                                <th className="px-4 py-3 text-left font-medium">Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {payments.map((payment) => (
-                                                <tr key={payment.id} className="hover:bg-muted/30 transition-colors">
-                                                    <td className="px-4 py-3 font-medium">{payment.plan?.name || 'Top-up'}</td>
-                                                    <td className="px-4 py-3">${(payment.amount / 100).toFixed(2)}</td>
-                                                    <td className="px-4 py-3">
-                                                        <Badge variant={payment.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-[10px] h-4">
-                                                            {payment.status}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-muted-foreground">
-                                                        {format(new Date(payment.createdAt), 'MMM d, yyyy')}
-                                                        <p className="text-[10px] opacity-70">
-                                                            {format(new Date(payment.createdAt), 'HH:mm')}
-                                                        </p>
-                                                    </td>
+                                <div className="overflow-x-auto">
+                                    <div className="rounded-md border overflow-hidden min-w-[600px]">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b bg-muted/50">
+                                                    <th className="px-4 py-3 text-left font-medium">Plan</th>
+                                                    <th className="px-4 py-3 text-left font-medium">Amount</th>
+                                                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                                                    <th className="px-4 py-3 text-left font-medium">Date</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {payments.map((payment) => (
+                                                    <tr key={payment.id} className="hover:bg-muted/30 transition-colors">
+                                                        <td className="px-4 py-3 font-medium">{payment.plan?.name || 'Top-up'}</td>
+                                                        <td className="px-4 py-3">${(payment.amount / 100).toFixed(2)}</td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge variant={payment.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-[10px] h-4">
+                                                                {payment.status}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-muted-foreground">
+                                                            {format(new Date(payment.createdAt), 'MMM d, yyyy')}
+                                                            <p className="text-[10px] opacity-70">
+                                                                {format(new Date(payment.createdAt), 'HH:mm')}
+                                                            </p>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
                         </div>

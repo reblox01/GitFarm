@@ -46,7 +46,7 @@ export default async function AdminPlansPage() {
     });
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-10 min-w-0 w-full">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">Subscription Plans</h1>
@@ -58,7 +58,7 @@ export default async function AdminPlansPage() {
             </div>
 
             <div className="grid gap-8">
-                <Card>
+                <Card className="overflow-hidden">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Settings2 className="h-5 w-5 text-primary" />
@@ -66,70 +66,72 @@ export default async function AdminPlansPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Tier Name</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Price</TableHead>
-                                    <TableHead>Credits</TableHead>
-                                    <TableHead>Stripe ID</TableHead>
-                                    <TableHead>Subscribers</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {plans.length === 0 ? (
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-[900px]">
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
-                                            No plans created yet.
-                                        </TableCell>
+                                        <TableHead>Tier Name</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Price</TableHead>
+                                        <TableHead>Credits</TableHead>
+                                        <TableHead>Stripe ID</TableHead>
+                                        <TableHead>Subscribers</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                ) : (
-                                    plans.map((plan: any) => (
-                                        <TableRow key={plan.id}>
-                                            <TableCell className="font-medium">
-                                                <div>{plan.name}</div>
-                                                {plan.isDefault && (
-                                                    <Badge variant="secondary" className="mt-1">Default</Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={plan.type === 'MONTHLY' ? 'default' : 'outline'}>
-                                                    {plan.type === 'MONTHLY' ? 'Monthly' : 'One-time'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="font-medium">${(plan.price / 100).toFixed(2)}</TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1.5 text-green-600 font-bold">
-                                                    <Coins className="h-3.5 w-3.5" />
-                                                    {(plan.credits ?? 0).toLocaleString()}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="font-mono text-[10px] text-muted-foreground overflow-hidden max-w-[100px] truncate">
-                                                {plan.stripeProductId || '-'}
-                                            </TableCell>
-                                            <TableCell>{plan._count.subscriptions}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <PlanDialog
-                                                    plan={plan}
-                                                    trigger={
-                                                        <Button variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary">
-                                                            <Pencil className="mr-2 h-4 w-4" />
-                                                            Edit
-                                                        </Button>
-                                                    }
-                                                />
+                                </TableHeader>
+                                <TableBody>
+                                    {plans.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+                                                No plans created yet.
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    ) : (
+                                        plans.map((plan: any) => (
+                                            <TableRow key={plan.id}>
+                                                <TableCell className="font-medium">
+                                                    <div>{plan.name}</div>
+                                                    {plan.isDefault && (
+                                                        <Badge variant="secondary" className="mt-1">Default</Badge>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    <Badge variant={plan.type === 'MONTHLY' ? 'default' : 'outline'}>
+                                                        {plan.type === 'MONTHLY' ? 'Monthly' : 'One-time'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="font-medium whitespace-nowrap">${(plan.price / 100).toFixed(2)}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5 text-green-600 font-bold">
+                                                        <Coins className="h-3.5 w-3.5" />
+                                                        {(plan.credits ?? 0).toLocaleString()}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="font-mono text-[10px] text-muted-foreground">
+                                                    <div className="truncate max-w-[120px]">{plan.stripeProductId || '-'}</div>
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap">{plan._count.subscriptions}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <PlanDialog
+                                                        plan={plan}
+                                                        trigger={
+                                                            <Button variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary">
+                                                                <Pencil className="mr-2 h-4 w-4" />
+                                                                Edit
+                                                            </Button>
+                                                        }
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
 

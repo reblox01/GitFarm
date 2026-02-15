@@ -26,7 +26,7 @@ export default async function AdminUsersPage() {
     });
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0 w-full">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Users & Invitations</h2>
@@ -40,76 +40,84 @@ export default async function AdminUsersPage() {
                     {invitations.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No pending invitations.</p>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Expires</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {invitations.map((invite) => (
-                                    <TableRow key={invite.id}>
-                                        <TableCell>{invite.email}</TableCell>
-                                        <TableCell><Badge variant="outline">{invite.role}</Badge></TableCell>
-                                        <TableCell>{invite.expires.toLocaleDateString()}</TableCell>
-                                        <TableCell className="text-right">
-                                            <RevokeButton id={invite.id} />
-                                        </TableCell>
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-[600px]">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Expires</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {invitations.map((invite) => (
+                                        <TableRow key={invite.id}>
+                                            <TableCell className="truncate max-w-[200px]">{invite.email}</TableCell>
+                                            <TableCell className="whitespace-nowrap"><Badge variant="outline">{invite.role}</Badge></TableCell>
+                                            <TableCell className="whitespace-nowrap">{invite.expires.toLocaleDateString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                <RevokeButton id={invite.id} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CollapsibleInvitations>
 
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 overflow-hidden">
                     <CardHeader>
                         <CardTitle>All Users</CardTitle>
                         <CardDescription>List of registered users.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Credits</TableHead>
-                                    <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {users.map((user) => (
-                                    <TableRow key={user.id}>
-                                        <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
-                                        <TableCell>{user.email}</TableCell>
-                                        <TableCell><Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
-                                        <TableCell>
-                                            {user.emailVerified ? (
-                                                <Badge className="bg-green-500 hover:bg-green-600">Verified</Badge>
-                                            ) : (
-                                                <Badge variant="outline" className="text-yellow-600 border-yellow-600">Unverified</Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-500">
-                                                <Coins className="size-4" />
-                                                <span className="font-mono font-medium">{user.credits}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{user.createdAt.toLocaleDateString()}</TableCell>
-                                        <TableCell className="text-right">
-                                            <UserActions user={user} />
-                                        </TableCell>
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-[800px]">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Credits</TableHead>
+                                        <TableHead>Joined</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {users.map((user) => (
+                                        <TableRow key={user.id}>
+                                            <TableCell className="font-medium">
+                                                <div className="truncate max-w-[150px]">{user.name || 'N/A'}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="truncate max-w-[200px]">{user.email}</div>
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap"><Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
+                                            <TableCell className="whitespace-nowrap">
+                                                {user.emailVerified ? (
+                                                    <Badge className="bg-green-500 hover:bg-green-600">Verified</Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-yellow-600 border-yellow-600">Unverified</Badge>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap">
+                                                <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-500">
+                                                    <Coins className="size-4" />
+                                                    <span className="font-mono font-medium">{user.credits}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap">{user.createdAt.toLocaleDateString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                <UserActions user={user} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

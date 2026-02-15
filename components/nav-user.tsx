@@ -119,10 +119,10 @@ export function NavUser({
                                     Billing
                                 </a>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            {/* <DropdownMenuItem>
                                 <Bell />
                                 Notifications
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <div className="px-2 py-1.5">

@@ -56,6 +56,18 @@ export async function POST(req: NextRequest) {
             // Update user credits and subscription status
             console.log(`[STRIPE_WEBHOOK] Processing transaction: user=${userId}, plan=${planId}, amount=${session.amount_total}`);
 
+            const paymentId = session.payment_intent as string || session.id;
+
+            // Idempotency check: skip if this payment was already processed
+            const existingTx = await prisma.paymentTransaction.findFirst({
+                where: { providerPaymentId: paymentId }
+            });
+
+            if (existingTx) {
+                console.log(`[STRIPE_WEBHOOK] Payment ${paymentId} already processed, skipping to avoid double credit grant`);
+                break;
+            }
+
             try {
                 await prisma.$transaction([
                     // 1. Add credits
@@ -92,7 +104,7 @@ export async function POST(req: NextRequest) {
                             currency: session.currency || 'usd',
                             status: 'COMPLETED',
                             provider: 'STRIPE',
-                            providerPaymentId: session.payment_intent as string || session.id,
+                            providerPaymentId: paymentId,
                             planId: plan.id,
                             metadata: {
                                 subscriptionId: typeof session.subscription === 'string' ? session.subscription : (session.subscription as Stripe.Subscription)?.id,
@@ -105,7 +117,7 @@ export async function POST(req: NextRequest) {
                 console.log(`[STRIPE_WEBHOOK] Successfully recorded transaction and granted ${plan.credits} credits to user ${userId}`);
             } catch (txError) {
                 console.error('[STRIPE_WEBHOOK] Database transaction FAILED:', txError);
-                throw txError; // Rethrow to return 500 later? ActuallyPOST returns received:true usually.
+                throw txError;
             }
             break;
         }
@@ -124,6 +136,18 @@ export async function POST(req: NextRequest) {
             });
 
             if (subscription && subscription.plan && invoice.billing_reason === 'subscription_cycle') {
+                const invoicePaymentId = invoice.payment_intent || invoice.id;
+
+                // Idempotency check: skip if this invoice payment was already processed
+                const existingInvoiceTx = await prisma.paymentTransaction.findFirst({
+                    where: { providerPaymentId: invoicePaymentId }
+                });
+
+                if (existingInvoiceTx) {
+                    console.log(`[STRIPE_WEBHOOK] Invoice payment ${invoicePaymentId} already processed, skipping`);
+                    break;
+                }
+
                 console.log(`[STRIPE_WEBHOOK] Recurring subscription cycle detected for user ${subscription.userId}. Granting ${subscription.plan.credits} credits.`);
                 try {
                     await prisma.$transaction([
@@ -140,7 +164,7 @@ export async function POST(req: NextRequest) {
                                 currency: invoice.currency || 'usd',
                                 status: 'COMPLETED',
                                 provider: 'STRIPE',
-                                providerPaymentId: invoice.payment_intent || invoice.id,
+                                providerPaymentId: invoicePaymentId,
                                 planId: subscription.plan.id,
                                 metadata: {
                                     subscriptionId: subscriptionId,

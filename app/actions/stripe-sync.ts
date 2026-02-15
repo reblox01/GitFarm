@@ -29,11 +29,23 @@ export async function syncStripeCredits() {
     if (paidSession) {
         console.log(`[Stripe Sync] Found paid session: ${paidSession.id}`);
         const planId = paidSession.metadata?.planId;
+        const paymentId = paidSession.payment_intent as string || paidSession.id;
+
+        // Idempotency check: skip if this payment was already processed (by webhook or previous sync)
+        const existingTx = await prisma.paymentTransaction.findFirst({
+            where: { providerPaymentId: paymentId }
+        });
+
+        if (existingTx) {
+            console.log(`[Stripe Sync] Payment ${paymentId} already processed, skipping credit grant`);
+            revalidatePath('/dashboard');
+            return { success: true, message: 'Payment already synced! Credits are up to date.' };
+        }
 
         if (planId) {
             const plan = await prisma.plan.findUnique({ where: { id: planId } });
             if (plan) {
-                await updateCreditsAndSubscription(session.user.id, plan, paidSession.subscription as string);
+                await updateCreditsAndSubscription(session.user.id, plan, paidSession.subscription as string, paymentId, paidSession.amount_total || 0, paidSession.currency || 'usd', paidSession.id);
                 return { success: true, message: `Synced credits from session: ${plan.credits} added!` };
             }
         }
@@ -50,6 +62,18 @@ export async function syncStripeCredits() {
 
     for (const item of invoices.data) {
         const invoice = item as any;
+        const invoicePaymentId = invoice.payment_intent || invoice.id;
+
+        // Idempotency check for invoices too
+        const existingInvoiceTx = await prisma.paymentTransaction.findFirst({
+            where: { providerPaymentId: invoicePaymentId }
+        });
+
+        if (existingInvoiceTx) {
+            console.log(`[Stripe Sync] Invoice payment ${invoicePaymentId} already processed, skipping`);
+            continue;
+        }
+
         // Try to find a plan by the line items
         const lineItem = invoice.lines.data[0];
         if (lineItem?.price?.id) {
@@ -59,7 +83,7 @@ export async function syncStripeCredits() {
 
             if (plan) {
                 console.log(`[Stripe Sync] Found plan via invoice: ${plan.name}`);
-                await updateCreditsAndSubscription(session.user.id, plan, invoice.subscription as string);
+                await updateCreditsAndSubscription(session.user.id, plan, invoice.subscription as string, invoicePaymentId, invoice.amount_paid, invoice.currency || 'usd', null);
                 return { success: true, message: `Synced credits from invoice: ${plan.credits} added!` };
             }
         }
@@ -68,18 +92,15 @@ export async function syncStripeCredits() {
     return { error: 'No successful payments or active plans found in Stripe. If you just paid, wait 10 seconds and refresh.' };
 }
 
-async function updateCreditsAndSubscription(userId: string, plan: any, subscriptionId: string | null) {
-    // Check if we already have this subscription active to avoid double credits on refresh
-    const existing = await prisma.userSubscription.findUnique({
-        where: { userId }
-    });
-
-    // If it's a sub and it's already recorded, don't re-grant credits unless we want to allow it
-    if (existing?.planId === plan.id && existing?.status === 'ACTIVE' && plan.type === 'MONTHLY') {
-        console.log(`[Stripe Sync] Plan already active for user ${userId}, skipping credit grant`);
-        return;
-    }
-
+async function updateCreditsAndSubscription(
+    userId: string,
+    plan: any,
+    subscriptionId: string | null,
+    providerPaymentId: string,
+    amount: number,
+    currency: string,
+    stripeSessionId: string | null
+) {
     await prisma.$transaction([
         prisma.user.update({
             where: { id: userId },
@@ -98,6 +119,22 @@ async function updateCreditsAndSubscription(userId: string, plan: any, subscript
                 status: 'ACTIVE',
                 provider: 'STRIPE',
                 providerSubscriptionId: subscriptionId
+            }
+        }),
+        prisma.paymentTransaction.create({
+            data: {
+                userId,
+                amount,
+                currency,
+                status: 'COMPLETED',
+                provider: 'STRIPE',
+                providerPaymentId,
+                planId: plan.id,
+                metadata: {
+                    subscriptionId: subscriptionId,
+                    stripeSessionId: stripeSessionId,
+                    source: 'stripe-sync',
+                },
             }
         })
     ]);

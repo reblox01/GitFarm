@@ -107,9 +107,11 @@ export function NavUser({
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <BadgeCheck />
-                                Account
+                            <DropdownMenuItem asChild>
+                                <a href="/dashboard/settings" className="flex items-center gap-2 w-full">
+                                    <BadgeCheck />
+                                    Account
+                                </a>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <a href="/dashboard/plans" className="flex items-center gap-2 w-full">
